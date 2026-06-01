@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LocalOfficeAI</title>
+    <link rel="stylesheet" href="./taskpane.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script type="module" src="./taskpane.js"></script>
+  </head>
+  <body>
+    <main class="taskpane">
+      <header class="taskpane__header">
+        <p class="taskpane__eyebrow">Word Add-in v0.1.0</p>
+        <h1>LocalOfficeAI</h1>
+        <p class="taskpane__description">
+          Legge soltanto il testo selezionato nel documento e lo mostra qui nel pannello.
+        </p>
+      </header>
+
+      <section class="taskpane__actions" aria-label="Azioni principali">
+        <button id="read-selection-button" type="button">Leggi selezione</button>
+      </section>
+
+      <section class="taskpane__output" aria-live="polite">
+        <h2>Testo selezionato</h2>
+        <p id="status-message" class="taskpane__status">
+          Premi il pulsante per leggere la selezione corrente in Word.
+        </p>
+        <pre id="selection-output" class="taskpane__selection" hidden></pre>
+      </section>
+    </main>
+  </body>
+</html>
