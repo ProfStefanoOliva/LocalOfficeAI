@@ -1,0 +1,15 @@
+{
+  "name": "localofficeai-word-addin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Base tecnica minimale dell'add-in Word di LocalOfficeAI.",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "clean": "node ./scripts/clean.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.417",
+    "typescript": "^5.8.3"
+  }
+}

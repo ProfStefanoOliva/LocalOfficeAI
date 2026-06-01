@@ -1,0 +1,95 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, #dbeafe, transparent 34%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.taskpane {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.taskpane__header,
+.taskpane__output {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dbe3f0;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.taskpane__eyebrow {
+  margin: 0 0 0.4rem;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+.taskpane__description {
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.taskpane__actions button {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+}
+
+.taskpane__actions button:hover {
+  background: linear-gradient(135deg, #1e40af, #1d4ed8);
+}
+
+.taskpane__actions button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.taskpane__status {
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.taskpane__selection {
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 0.9rem;
+  border: 1px solid #bfdbfe;
+  line-height: 1.45;
+}
