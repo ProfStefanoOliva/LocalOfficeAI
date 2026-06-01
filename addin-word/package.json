@@ -6,10 +6,13 @@
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "clean": "node ./scripts/clean.mjs",
+    "dev-cert": "office-addin-dev-certs install",
+    "dev-server": "node ./scripts/dev-server.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@types/office-js": "^1.0.417",
+    "office-addin-dev-certs": "^2.0.3",
     "typescript": "^5.8.3"
   }
 }
