@@ -63,6 +63,7 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - `manifest.xml`: manifest Office Add-in per Word;
 - `src/`: HTML, CSS e TypeScript del task pane;
 - `assets/`: icone locali minime referenziate dal manifest;
+- `assets/`: icone locali PNG referenziate dal manifest;
 - `scripts/`: script Node minimi per build, pulizia e server HTTPS locale.
 
 ## Limiti noti della fase
@@ -72,3 +73,4 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - l'add-in non modifica il documento Word e legge soltanto la selezione corrente;
 - il sideload può variare leggermente in base alla versione di Word o al canale Microsoft 365 in uso;
 - per il test locale HTTPS è necessario un certificato di sviluppo attendibile.
+- per la compatibilita' con la validazione del manifest e con il catalogo condiviso Word, le icone del manifest sono in formato PNG.
