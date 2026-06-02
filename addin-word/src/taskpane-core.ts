@@ -91,37 +91,44 @@ export const quickPromptTemplates: QuickPromptTemplate[] = [
   {
     id: "riscrivi",
     label: "Riscrivi",
-    promptText: "Riscrivi il contenuto in modo più chiaro, mantenendo il significato originale."
+    promptText:
+      "Riscrivi direttamente il contenuto in modo piu' chiaro, mantenendo il significato originale. Non fare domande e non trasformare la risposta in conversazione."
   },
   {
     id: "sintetizza",
     label: "Sintetizza",
-    promptText: "Sintetizza il contenuto mantenendo solo le informazioni essenziali."
+    promptText:
+      "Sintetizza direttamente il contenuto mantenendo solo le informazioni essenziali. Non fare domande e restituisci subito il testo finale."
   },
   {
     id: "espandi",
     label: "Espandi",
-    promptText: "Espandi il contenuto aggiungendo dettagli utili senza alterare il significato originale."
+    promptText:
+      "Espandi direttamente il contenuto aggiungendo dettagli utili senza alterare il significato originale. Non fare domande e restituisci subito il testo finale."
   },
   {
     id: "correggi",
     label: "Correggi",
-    promptText: "Correggi grammatica, ortografia e punteggiatura, mantenendo il significato originale."
+    promptText:
+      "Correggi direttamente grammatica, ortografia e punteggiatura, mantenendo il significato originale. Restituisci solo il testo corretto, non spiegare ogni modifica salvo richiesta esplicita, non fare domande e non rifiutare una normale correzione testuale."
   },
   {
     id: "spiega",
     label: "Spiega",
-    promptText: "Spiega il contenuto in modo chiaro e comprensibile."
+    promptText:
+      "Spiega direttamente il contenuto in modo chiaro e comprensibile. Non fare domande e produci subito una proposta finale utilizzabile."
   },
   {
     id: "piu-formale",
     label: "Rendi più formale",
-    promptText: "Rendi il contenuto più formale, preciso e professionale."
+    promptText:
+      "Rendi direttamente il contenuto piu' formale, preciso e professionale. Non fare domande e restituisci subito il testo finale."
   },
   {
     id: "piu-didattico",
     label: "Rendi più didattico",
-    promptText: "Rendi il contenuto più didattico, chiaro e adatto a studenti."
+    promptText:
+      "Rendi direttamente il contenuto piu' didattico, chiaro e adatto a studenti. Non fare domande e restituisci subito il testo finale."
   }
 ];
 
@@ -262,6 +269,12 @@ export function createViewState(activeView: TaskpaneViewName): Record<TaskpaneVi
 export function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedText: string): string {
   const profile = writingProfiles[profileId];
   const profileInstructions = profile.instructions.map((instruction) => `- ${instruction}`).join("\n");
+  const generalExecutionRules = [
+    "- Non fare domande all'utente e non trasformare la risposta in una conversazione.",
+    "- Produci direttamente un risultato finale utilizzabile.",
+    "- Se il testo e' ambiguo o incompleto, fai la migliore ipotesi prudente sulla base del contenuto disponibile.",
+    "- Se hai dovuto fare una ipotesi prudente, puoi aggiungere solo una breve nota finale: Nota: correzione o proposta basata sul testo disponibile."
+  ].join("\n");
   const trimmedSelectedText = selectedText.trim();
 
   if (trimmedSelectedText.length === 0) {
@@ -272,6 +285,9 @@ export function buildPrompt(profileId: WritingProfileId, userPrompt: string, sel
       `Profilo di scrittura: ${profile.label}`,
       "Istruzioni del profilo:",
       profileInstructions,
+      "",
+      "Regole generali di esecuzione:",
+      generalExecutionRules,
       "",
       "Modalita':",
       "Richiesta libera senza testo selezionato.",
@@ -292,6 +308,9 @@ export function buildPrompt(profileId: WritingProfileId, userPrompt: string, sel
     "Istruzioni del profilo:",
     profileInstructions,
     "",
+    "Regole generali di esecuzione:",
+    generalExecutionRules,
+    "",
     "Richiesta dell'utente:",
     userPrompt,
     "",
@@ -299,6 +318,6 @@ export function buildPrompt(profileId: WritingProfileId, userPrompt: string, sel
     trimmedSelectedText,
     "",
     "Output richiesto:",
-    "Restituisci solo il testo finale richiesto, senza titoli, note o spiegazioni aggiuntive."
+    "Restituisci direttamente il testo finale richiesto, senza trasformare la risposta in chat. Non fare domande all'utente. Mantieni il significato originale quando la richiesta riguarda correzione, riscrittura o miglioramento del testo."
   ].join("\n");
 }

@@ -1,6 +1,6 @@
 # Desktop Tray
 
-La release `v0.12.0` introduce una prima fondazione prudente di tray app Windows per `LocalOfficeAI`.
+La tray app introdotta in `v0.12.0` e ampliata in `v0.15.0` fornisce una prima base prudente per avvio locale e packaging portable di `LocalOfficeAI` su Windows.
 
 ## Obiettivo
 
@@ -9,7 +9,7 @@ Ridurre la necessita' di usare due finestre PowerShell visibili per:
 - `local-bridge`
 - dev-server di `addin-word`
 
-La tray app non e' ancora un installer e non abilita l'avvio automatico con Windows.
+La tray app non e' ancora un installer definitivo e non abilita l'avvio automatico con Windows.
 
 ## Requisiti
 
@@ -33,6 +33,17 @@ npm install
 npm run build
 npm run start
 ```
+
+Per creare un pacchetto portable locale:
+
+```bash
+npm run package
+npm run make
+```
+
+- `npm run package` crea la cartella del pacchetto Electron locale;
+- `npm run make` crea anche un artefatto ZIP Windows portable;
+- questa release non introduce aggiornamenti automatici o installer one-click.
 
 ## Comportamento attuale
 
@@ -60,9 +71,11 @@ La tray app mantiene file separati per:
 - `local-bridge.log`
 - `addin-word.log`
 
+Durante `npm run start:self-check`, i log vanno in `desktop-tray/tmp-runtime-logs/`.
+
 ## Limiti attuali
 
-- non e' presente un installer;
+- non e' presente un installer definitivo;
 - non e' configurato l'autostart con Windows;
 - non viene creato alcun servizio Windows;
 - l'avvio automatico riguarda solo i componenti quando la tray app viene aperta manualmente, non l'avvio della tray con Windows;

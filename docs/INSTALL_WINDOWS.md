@@ -1,0 +1,92 @@
+# Installazione Windows di LocalOfficeAI v0.15.0
+
+Questa release introduce una prima base di distribuzione della tray app e una procedura guidata piu' chiara per Word su Windows.
+
+## Cosa include v0.15.0
+
+- tray app Electron per LocalOfficeAI;
+- packaging portable in formato cartella/ZIP, non ancora installer definitivo;
+- script di supporto per preparare il catalogo sideload di Word;
+- documentazione passo passo per utenti Windows non tecnici.
+
+Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.0`, che mette insieme:
+
+- tray packaged;
+- `local-bridge`;
+- `addin-word`;
+- documentazione;
+- script di supporto.
+
+## Prerequisiti
+
+Prima di iniziare verifica di avere:
+
+1. Windows con Microsoft Word desktop installato.
+2. [Node.js](https://nodejs.org/) installato.
+3. Ollama installato.
+4. Almeno un modello Ollama disponibile.
+5. Accesso al repository o alla cartella release candidate locale preparata.
+
+## Avvio della tray app
+
+Se hai una release candidate locale preparata:
+
+1. Apri la cartella `portable`.
+2. Entra nella cartella del pacchetto tray Windows generato.
+3. Avvia `LocalOfficeAI Tray.exe`.
+4. Controlla che compaia l'icona LocalOfficeAI nell'area di notifica di Windows.
+
+Nota prudenziale:
+
+- il file ZIP generato da Electron Forge e' la base portable della sola tray app;
+- per un test locale completo di v0.15.0 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
+
+Se stai lavorando dal repository:
+
+1. Apri `desktop-tray`.
+2. Esegui `npm run build`.
+3. Esegui `npm run make` per creare il pacchetto ZIP portable.
+4. In alternativa, per sviluppo, esegui `npm run start`.
+
+## Cosa deve comparire
+
+Quando la tray parte:
+
+- l'icona deve comparire nell'area di notifica;
+- il menu deve mostrare `Stato LocalOfficeAI`;
+- la tray prova automaticamente ad avviare:
+  - `local-bridge`;
+  - `addin-word` dev-server.
+
+## Come verificare che la tray sia attiva
+
+Apri il menu con clic destro sull'icona e controlla:
+
+- `Ollama`: raggiungibile o non raggiungibile;
+- `local-bridge`: attivo o non attivo;
+- `addin-word dev-server`: attivo o non attivo.
+
+## Se Ollama non e' attivo
+
+La tray non blocca l'avvio degli altri componenti. Devi:
+
+1. avviare Ollama;
+2. attendere qualche secondo;
+3. usare `Aggiorna stato` dal menu tray.
+
+## Se local-bridge o addin-word dev-server non sono attivi
+
+1. Apri il menu tray.
+2. Usa `Avvia componenti`.
+3. Se ancora non partono, usa `Apri cartella log`.
+4. Controlla i log di:
+   - `local-bridge.log`
+   - `addin-word.log`
+
+## Importante
+
+- Questa release non crea un installer definitivo.
+- Questa release non configura l'avvio automatico con Windows.
+- Questa release non crea un servizio Windows.
+- LocalOfficeAI non modifica registry o firewall.
+- Il flusso stabile resta: anteprima -> copia negli appunti -> incolla manuale.

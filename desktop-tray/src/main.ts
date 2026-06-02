@@ -9,8 +9,29 @@ if (!singleInstanceLock) {
   app.quit();
 }
 
-const repoRoot = resolve(__dirname, "..", "..");
-const trayIconPath = resolve(repoRoot, "addin-word", "assets", "icon-32.png");
+function looksLikeLocalOfficeAIRoot(candidatePath: string): boolean {
+  return existsSync(join(candidatePath, "addin-word")) && existsSync(join(candidatePath, "local-bridge"));
+}
+
+function resolveLocalOfficeAIRoot(): string {
+  const candidatePaths = [
+    process.env.LOCALOFFICEAI_REPO_ROOT,
+    resolve(__dirname, "..", ".."),
+    resolve(process.resourcesPath, ".."),
+    resolve(process.resourcesPath, "..", "..")
+  ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+  for (const candidatePath of candidatePaths) {
+    if (looksLikeLocalOfficeAIRoot(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  return resolve(__dirname, "..", "..");
+}
+
+const repoRoot = resolveLocalOfficeAIRoot();
+const trayIconPath = resolve(__dirname, "..", "assets", "icon-32.png");
 const instructionsPath = resolve(repoRoot, "README.md");
 const selfCheckMode = process.argv.includes("--self-check");
 
@@ -21,7 +42,13 @@ let isShuttingDown = false;
 let startComponentsPromise: Promise<void> | null = null;
 
 function getTrayImage() {
-  return nativeImage.createFromPath(trayIconPath);
+  const trayImage = nativeImage.createFromPath(trayIconPath);
+
+  if (!trayImage.isEmpty()) {
+    return trayImage;
+  }
+
+  return nativeImage.createEmpty();
 }
 
 function formatStatusLine(label: string, value: { active: boolean; detail: string }): string {

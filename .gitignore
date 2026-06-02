@@ -11,4 +11,6 @@ Thumbs.db
 .idea/
 
 desktop-tray/tmp-runtime-logs/
+desktop-tray/out/
 local-bridge/.local/
+release_candidates/
