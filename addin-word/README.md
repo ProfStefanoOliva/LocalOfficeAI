@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.1.0`, resa avviabile in locale per lo sviluppo.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.4.0`, resa avviabile in locale per lo sviluppo e capace di mostrare un'anteprima generata tramite local-bridge e Ollama.
 
 ## Contenuto
 
@@ -8,7 +8,10 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.1.0`,
 - pulsante `Leggi selezione`;
 - lettura del testo selezionato nel documento Word;
 - visualizzazione del testo selezionato nel pannello;
-- messaggio chiaro quando non esiste una selezione testuale.
+- area prompt per una richiesta personalizzata;
+- pulsante `Genera anteprima`;
+- anteprima generata localmente tramite `http://localhost:3210/ollama/generate`;
+- messaggio chiaro quando non esiste una selezione testuale o manca il prompt.
 
 ## Installazione dipendenze
 
@@ -42,6 +45,31 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
+## Prerequisiti per provare la v0.4.0
+
+Per la prova completa servono tutti questi elementi locali:
+
+1. il server HTTPS dell'add-in Word su `https://localhost:3000`;
+2. il `local-bridge` avviato su `http://localhost:3210`;
+3. Ollama attivo in locale su `http://localhost:11434`;
+4. almeno un modello disponibile in Ollama, ad esempio `qwen2.5-coder:1.5b`.
+
+## Avvio del local-bridge
+
+Nel repository, dalla cartella `local-bridge/`:
+
+```bash
+npm run build
+npm start
+```
+
+Puoi verificare rapidamente il bridge con:
+
+```bash
+curl http://localhost:3210/health
+curl http://localhost:3210/ollama/health
+```
+
 ## Sideload generale in Microsoft Word
 
 Procedura generale consigliata per test locali:
@@ -50,11 +78,14 @@ Procedura generale consigliata per test locali:
 2. esegui `npm run build`;
 3. esegui `npm run dev-cert` e accetta l'installazione del certificato di sviluppo quando richiesta;
 4. esegui `npm run dev-server`;
-5. apri Microsoft Word;
-6. vai in `Inserisci` > `Componenti aggiuntivi` > `I miei componenti aggiuntivi` > `Carica componente aggiuntivo personale`;
-7. seleziona il file `addin-word/manifest.xml`;
-8. apri il task pane di `LocalOfficeAI` dalla ribbon;
-9. seleziona testo nel documento e premi `Leggi selezione`.
+5. avvia il `local-bridge` e verifica che Ollama sia attivo;
+6. apri Microsoft Word;
+7. vai in `Inserisci` > `Componenti aggiuntivi` > `I miei componenti aggiuntivi` > `Carica componente aggiuntivo personale`;
+8. seleziona il file `addin-word/manifest.xml`;
+9. apri il task pane di `LocalOfficeAI` dalla ribbon;
+10. seleziona testo nel documento e premi `Leggi selezione`;
+11. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
+12. premi `Genera anteprima` e controlla l'area `Anteprima risultato`.
 
 Se Word segnala problemi di sicurezza del contenuto locale, verifica che il certificato di sviluppo sia stato installato e considerato attendibile dal sistema.
 
@@ -69,8 +100,9 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 ## Limiti noti della fase
 
 - il server locale serve solo file statici da `dist/` e non include hot reload;
-- non è presente alcuna integrazione con Ollama, LM Studio o backend locali;
-- l'add-in non modifica il documento Word e legge soltanto la selezione corrente;
+- l'add-in invia il testo solo al `local-bridge` locale su `http://localhost:3210`;
+- l'anteprima usa Ollama solo tramite il bridge locale;
+- l'add-in non modifica il documento Word: questa fase mostra solo un'anteprima;
 - il sideload può variare leggermente in base alla versione di Word o al canale Microsoft 365 in uso;
 - per il test locale HTTPS è necessario un certificato di sviluppo attendibile.
 - per la compatibilita' con la validazione del manifest e con il catalogo condiviso Word, le icone del manifest sono in formato PNG.

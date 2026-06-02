@@ -9,11 +9,17 @@ import {
 const serviceName = "LocalOfficeAI Local Bridge";
 const serviceVersion = "0.3.0";
 const port = 3210;
+const allowedOrigin = "https://localhost:3000";
 
 type JsonObject = Record<string, unknown>;
 
 function sendJson(response: ServerResponse, statusCode: number, payload: JsonObject): void {
-  response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+  response.writeHead(statusCode, {
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Content-Type": "application/json; charset=utf-8"
+  });
   response.end(JSON.stringify(payload));
 }
 
@@ -100,6 +106,16 @@ const server = createServer(async (request, response) => {
   const method = request.method ?? "GET";
   const url = request.url ?? "/";
   const ollamaConfig = getOllamaConfig();
+
+  if (method === "OPTIONS") {
+    response.writeHead(204, {
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Origin": allowedOrigin
+    });
+    response.end();
+    return;
+  }
 
   if (method === "GET" && url === "/health") {
     sendJson(response, 200, {
