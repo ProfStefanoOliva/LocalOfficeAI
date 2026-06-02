@@ -213,7 +213,9 @@ export function normalizeStoredPreferences(
   const ollamaModel = typeof preferences?.ollamaModel === "string" ? preferences.ollamaModel.trim() : "";
   const aiProvider =
     typeof preferences?.aiProvider === "string" &&
-    aiProviderDefinitions.some((provider) => provider.id === preferences.aiProvider)
+    aiProviderDefinitions.some(
+      (provider) => provider.id === preferences.aiProvider && provider.availability === "active"
+    )
       ? (preferences.aiProvider as AIProviderId)
       : defaultAIProviderId;
 

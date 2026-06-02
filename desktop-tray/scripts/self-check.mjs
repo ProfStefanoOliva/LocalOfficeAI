@@ -18,7 +18,7 @@ try {
   console.log(`SELF_CHECK_LOCAL_BRIDGE_BEFORE=${initialStatus.localBridge.detail}`);
   console.log(`SELF_CHECK_ADDIN_WORD_BEFORE=${initialStatus.addinWord.detail}`);
 
-  await runtime.startComponents();
+  await runtime.startComponents("self-check");
   await new Promise((resolvePromise) => setTimeout(resolvePromise, 5000));
 
   const finalStatus = await runtime.getStatus();

@@ -1,4 +1,5 @@
-const defaultOllamaBaseUrl = "http://localhost:11434";
+import { defaultLocalAIBaseUrl, getLocalAISettings } from "./localAiSettings.js";
+
 const defaultModel = "qwen2.5-coder:1.5b";
 
 export type OllamaConfig = {
@@ -53,8 +54,10 @@ export type OllamaGenerateResult =
     };
 
 export function getOllamaConfig(): OllamaConfig {
+  const localAISettings = getLocalAISettings();
+
   return {
-    baseUrl: process.env.LOCALOFFICEAI_OLLAMA_URL?.trim() || defaultOllamaBaseUrl,
+    baseUrl: localAISettings.baseUrl || process.env.LOCALOFFICEAI_OLLAMA_URL?.trim() || defaultLocalAIBaseUrl,
     defaultModel: process.env.LOCALOFFICEAI_OLLAMA_MODEL?.trim() || defaultModel
   };
 }

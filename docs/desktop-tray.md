@@ -41,6 +41,7 @@ All'avvio:
 - prova a ottenere il single instance lock;
 - non apre una finestra principale;
 - crea una icona tray;
+- prova automaticamente ad avviare `local-bridge` e `addin-word` se non risultano gia' attivi;
 - mostra un menu contestuale con:
   - stato locale;
   - avvio componenti;
@@ -64,6 +65,7 @@ La tray app mantiene file separati per:
 - non e' presente un installer;
 - non e' configurato l'autostart con Windows;
 - non viene creato alcun servizio Windows;
+- l'avvio automatico riguarda solo i componenti quando la tray app viene aperta manualmente, non l'avvio della tray con Windows;
 - il controllo del dev-server dell'add-in resta prudente e basato sulla porta `3000`;
 - l'icona tray riusa temporaneamente un asset PNG esistente del progetto e non un `.ico` dedicato.
 

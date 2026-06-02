@@ -142,6 +142,16 @@ test("normalizeStoredPreferences torna a Ollama locale se il provider salvato no
   assert.equal(normalized.writingProfile, "narrativo");
 });
 
+test("normalizeStoredPreferences non attiva provider cloud futuri anche se presenti nelle preferenze", () => {
+  const normalized = normalizeStoredPreferences({
+    aiProvider: "claude",
+    writingProfile: "didattico"
+  });
+
+  assert.equal(normalized.aiProvider, "ollama-local");
+  assert.equal(normalized.writingProfile, "didattico");
+});
+
 test("chooseOllamaModel privilegia preferenza valida, poi selezione precedente, poi primo modello", () => {
   assert.equal(chooseOllamaModel([], "", ""), "");
   assert.equal(chooseOllamaModel(["m1", "m2"], "m2", "m1"), "m2");
