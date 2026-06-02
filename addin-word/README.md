@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.13.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.14.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, endpoint AI locale configurabile, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
 
 ## Contenuto
 
@@ -10,7 +10,7 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.13.0`
 - visualizzazione del testo selezionato nel pannello;
 - pulsante `Cancella selezione` per rimuovere solo il testo memorizzato nel pannello;
 - selezione del `Profilo di scrittura`;
-- riepilogo compatto di `Provider AI` e modello corrente nella vista principale;
+- riepilogo compatto di `Provider AI`, modello corrente ed endpoint AI attivo nella vista principale;
 - sezione `Prompt rapidi` con richieste precompilate modificabili dall'utente;
 - pulsante `⚙️` per aprire la vista `Impostazioni`;
 - pulsante `❓` per aprire la vista `Informazioni`;
@@ -73,6 +73,25 @@ In questa release:
 - non vengono richieste o salvate API key;
 - il testo continua a essere inviato solo al bridge locale e a Ollama su `localhost`.
 
+## Endpoint AI locale configurabile
+
+La release `v0.14.0` permette di configurare in `⚙️ Impostazioni` l'endpoint AI locale usato dal `local-bridge`.
+
+Valore predefinito:
+
+```bash
+http://localhost:11434
+```
+
+Esempi supportati:
+
+- `http://localhost:11434`
+- `http://127.0.0.1:11434`
+- `http://192.168.1.50:11434`
+- `http://nome-server-lan:11434`
+
+L'endpoint viene salvato dal `local-bridge`, non come API key e non come configurazione cloud. Se usi un endpoint non `localhost` / `127.0.0.1`, il task pane mostra un avviso privacy chiaro: il testo potra' essere inviato a un altro dispositivo della rete locale.
+
 ## Installazione dipendenze
 
 ```bash
@@ -122,7 +141,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.13.0
+## Prerequisiti per provare la v0.14.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -161,19 +180,22 @@ Procedura generale consigliata per test locali:
 8. seleziona il file `addin-word/manifest.xml`;
 9. apri il task pane di `LocalOfficeAI` dalla ribbon;
 10. apri `⚙️`, premi `Aggiorna stato` e verifica che `Local-bridge` e `Ollama` risultino attivi;
-11. nella vista `Impostazioni`, controlla che `Motore AI` resti su `Ollama locale` e che il menu `Modello Ollama` venga popolato;
-12. se vuoi, nella stessa vista scegli anche tema e profilo predefinito;
-13. se vuoi, apri `❓` per consultare credits e informazioni del progetto;
-14. seleziona testo nel documento e premi `Leggi selezione`;
-15. scegli un `Profilo di scrittura`;
-16. scegli un `Modello Ollama`, se disponibile;
-17. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
-18. se vuoi, usa un pulsante della sezione `Prompt rapidi` per precompilare la richiesta e poi rifiniscila manualmente;
-19. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
-20. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
-21. premi `Copia anteprima`;
-22. verifica il messaggio di conferma della copia;
-23. incolla manualmente il testo nel documento Word nel punto desiderato.
+11. nella vista `Impostazioni`, controlla che `Motore AI` resti su `Ollama locale`;
+12. se necessario, modifica `Endpoint AI locale / Ollama`, poi usa `Salva endpoint` oppure `Ripristina predefinito`;
+13. verifica l'eventuale avviso privacy se l'endpoint non e' `localhost` o `127.0.0.1`;
+14. controlla che il menu `Modello Ollama` venga popolato in base all'endpoint configurato;
+15. se vuoi, nella stessa vista scegli anche tema e profilo predefinito;
+16. se vuoi, apri `❓` per consultare credits e informazioni del progetto;
+17. seleziona testo nel documento e premi `Leggi selezione`;
+18. scegli un `Profilo di scrittura`;
+19. scegli un `Modello Ollama`, se disponibile;
+20. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
+21. se vuoi, usa un pulsante della sezione `Prompt rapidi` per precompilare la richiesta e poi rifiniscila manualmente;
+22. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
+23. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
+24. premi `Copia anteprima`;
+25. verifica il messaggio di conferma della copia;
+26. incolla manualmente il testo nel documento Word nel punto desiderato.
 
 La v0.10.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
 
@@ -206,9 +228,11 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - l'add-in invia il testo solo al `local-bridge` locale su `http://localhost:3210`;
 - l'anteprima usa Ollama solo tramite il bridge locale;
 - il task pane interroga `GET /health`, `GET /ollama/health` e `GET /ollama/models` dalla vista `Impostazioni` per mostrare lo stato locale;
+- il task pane usa anche `GET /settings/local-ai`, `POST /settings/local-ai` e `POST /settings/local-ai/reset` per leggere e salvare l'endpoint AI locale tramite il bridge;
 - il profilo di scrittura viene tradotto in istruzioni di prompt lato task pane prima della chiamata al bridge;
 - il modello selezionato viene inviato a `POST /ollama/generate` quando disponibile;
 - tema, provider, profilo e modello selezionato vengono salvati come preferenze locali del task pane;
+- l'endpoint AI locale non viene salvato nel task pane: la persistenza e' gestita dal `local-bridge`;
 - i provider cloud futuri sono mostrati solo come placeholder disabilitati;
 - la copia negli appunti avviene solo dopo clic esplicito su `Copia anteprima`;
 - l'utente incolla manualmente il risultato nel documento Word;

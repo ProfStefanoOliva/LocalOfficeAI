@@ -4,6 +4,8 @@ LocalOfficeAI è un progetto open source per la creazione di un add-in locale pe
 
 Il progetto è pensato per funzionare in locale, senza inviare il contenuto dei documenti a servizi cloud.
 
+Nella release `v0.14.0` il backend AI locale resta Ollama, ma il suo endpoint non e' piu' limitato a `http://localhost:11434`: puo' essere configurato anche verso un'istanza LAN, mantenendo comunque il `local-bridge` su `http://localhost:3210`.
+
 ## Obiettivo iniziale
 
 La prima fase prevede un add-in Word basato su Office.js e TypeScript, con task pane laterale capace di leggere il testo selezionato e mostrarlo all'utente.
@@ -45,5 +47,5 @@ Note importanti:
 - il launcher non e' un installer completo;
 - il launcher non crea un servizio Windows;
 - il launcher non modifica firewall, registry o impostazioni di sistema;
-- se Ollama non e' raggiungibile su `http://localhost:11434`, il launcher si ferma e chiede di avviare Ollama;
+- se l'endpoint AI locale configurato nel bridge non e' raggiungibile, il launcher o la tray mostreranno lo stato non attivo;
 - il flusso stabile resta invariato: anteprima locale -> copia negli appunti -> incolla manuale nel documento.

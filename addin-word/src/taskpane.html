@@ -13,7 +13,7 @@
       <header class="taskpane__header">
         <div class="taskpane__header-top">
           <div>
-            <p class="taskpane__eyebrow">Word Add-in v0.13.0</p>
+            <p class="taskpane__eyebrow">Word Add-in v0.14.0</p>
             <h1>LocalOfficeAI</h1>
           </div>
           <div class="taskpane__header-actions">
@@ -67,6 +67,10 @@
             <div class="taskpane__summary-row">
               <span class="taskpane__status-label">Profilo corrente</span>
               <span id="profile-summary-value" class="taskpane__summary-value">Neutro</span>
+            </div>
+            <div class="taskpane__summary-row">
+              <span class="taskpane__status-label">Endpoint AI</span>
+              <span id="endpoint-summary-value" class="taskpane__summary-value">Locale standard</span>
             </div>
           </div>
 
@@ -144,7 +148,26 @@
             <option value="deepseek-compatible" disabled>DeepSeek e compatibili (futuro)</option>
           </select>
           <p id="provider-status-message" class="taskpane__hint">
-            Ollama locale e' l'unico provider attivo nella v0.13.0. I provider cloud restano disabilitati.
+            Ollama locale e' l'unico provider attivo nella v0.14.0. I provider cloud restano disabilitati.
+          </p>
+
+          <label class="taskpane__label" for="local-ai-endpoint">Endpoint AI locale / Ollama</label>
+          <input
+            id="local-ai-endpoint"
+            class="taskpane__input"
+            type="url"
+            spellcheck="false"
+            placeholder="http://localhost:11434"
+          />
+          <div class="taskpane__inline-actions">
+            <button id="save-local-ai-endpoint-button" class="taskpane__mini-button" type="button">Salva endpoint</button>
+            <button id="reset-local-ai-endpoint-button" class="taskpane__mini-button" type="button">Ripristina predefinito</button>
+          </div>
+          <p id="local-ai-endpoint-message" class="taskpane__status">
+            Endpoint predefinito: <code>http://localhost:11434</code>
+          </p>
+          <p id="local-ai-privacy-warning" class="taskpane__privacy-warning" hidden>
+            Questo endpoint non punta a localhost: il testo selezionato potra' essere inviato a un altro dispositivo della rete locale.
           </p>
 
           <div class="taskpane__status-grid">
@@ -194,7 +217,7 @@
             Con Ollama locale il testo viene inviato solo al local-bridge locale e a Ollama configurato su <code>localhost</code>.
           </p>
           <p class="taskpane__status">
-            I provider cloud futuri potranno inviare testo a servizi esterni solo dopo una scelta esplicita dell'utente. Nella v0.13.0 non vengono introdotte chiamate cloud.
+            I provider cloud futuri potranno inviare testo a servizi esterni solo dopo una scelta esplicita dell'utente. Nella v0.14.0 non vengono introdotte chiamate cloud.
           </p>
         </section>
       </section>
@@ -212,7 +235,7 @@
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Versione</span>
-              <p>v0.13.0</p>
+              <p>v0.14.0</p>
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Descrizione</span>
@@ -224,6 +247,7 @@
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Ultimi aggiornamenti</span>
               <ul class="taskpane__info-updates">
+                <li>v0.14.0: endpoint AI locale configurabile, avviso privacy per endpoint LAN e stato aggiornato sul bridge.</li>
                 <li>v0.13.0: base provider AI multipli, stato locale spostato in Impostazioni, Ollama locale confermato come unico provider attivo.</li>
                 <li>v0.12.0: tray app Electron per avvio e controllo locale dei componenti.</li>
                 <li>v0.10.0: primi test automatici su prompt builder, preferenze e logica delle viste.</li>
@@ -246,7 +270,7 @@
               <span class="taskpane__info-label">Privacy</span>
               <p>
                 LocalOfficeAI lavora in locale. Il testo viene inviato solo al local-bridge configurato su
-                <code>localhost</code> e non a servizi cloud. I provider cloud futuri non sono attivi nella v0.13.0.
+                <code>localhost</code> e non a servizi cloud. I provider cloud futuri non sono attivi nella v0.14.0.
               </p>
             </div>
             <div class="taskpane__info-item">

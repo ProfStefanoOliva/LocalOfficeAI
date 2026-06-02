@@ -18,6 +18,7 @@ let tray: Tray | null = null;
 let runtime: LocalOfficeAIRuntime | null = null;
 let cachedStatus: LocalOfficeAIStatus | null = null;
 let isShuttingDown = false;
+let startComponentsPromise: Promise<void> | null = null;
 
 function getTrayImage() {
   return nativeImage.createFromPath(trayIconPath);
@@ -43,6 +44,32 @@ async function refreshStatus(): Promise<void> {
   }
 
   rebuildTrayMenu();
+}
+
+async function ensureComponentsStarted(source: "auto" | "manual" | "restart"): Promise<void> {
+  if (!runtime) {
+    return;
+  }
+
+  if (startComponentsPromise) {
+    await startComponentsPromise;
+    return;
+  }
+
+  startComponentsPromise = (async () => {
+    try {
+      if (source === "restart") {
+        await runtime.restartComponents();
+        return;
+      }
+
+      await runtime.startComponents(source);
+    } finally {
+      startComponentsPromise = null;
+    }
+  })();
+
+  await startComponentsPromise;
 }
 
 function rebuildTrayMenu(): void {
@@ -87,7 +114,8 @@ function rebuildTrayMenu(): void {
       label: "Avvia componenti",
       click: async () => {
         try {
-          await runtime?.startComponents();
+          await ensureComponentsStarted("manual");
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           await refreshStatus();
         } catch (error) {
           console.error("Avvio componenti non riuscito.", error);
@@ -109,7 +137,8 @@ function rebuildTrayMenu(): void {
       label: "Riavvia componenti",
       click: async () => {
         try {
-          await runtime?.restartComponents();
+          await ensureComponentsStarted("restart");
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           await refreshStatus();
         } catch (error) {
           console.error("Riavvio componenti non riuscito.", error);
@@ -166,6 +195,17 @@ async function createTray(): Promise<void> {
   tray = new Tray(getTrayImage());
   rebuildTrayMenu();
   await refreshStatus();
+
+  if (!selfCheckMode) {
+    try {
+      await ensureComponentsStarted("auto");
+    } catch (error) {
+      console.error("Avvio automatico componenti non riuscito.", error);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await refreshStatus();
+  }
 
   if (selfCheckMode && cachedStatus) {
     console.log("SELF_CHECK_TRAY=OK");

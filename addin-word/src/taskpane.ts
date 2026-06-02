@@ -34,6 +34,9 @@ const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
 const bridgeHealthUrl = "http://localhost:3210/health";
 const ollamaHealthUrl = "http://localhost:3210/ollama/health";
 const ollamaModelsUrl = "http://localhost:3210/ollama/models";
+const localAISettingsUrl = "http://localhost:3210/settings/local-ai";
+const localAISettingsResetUrl = "http://localhost:3210/settings/local-ai/reset";
+const defaultLocalAIBaseUrl = "http://localhost:11434";
 const preferencesStorageKey = "localofficeai.taskpane.preferences";
 
 type BridgeHealthResponse = {
@@ -52,6 +55,14 @@ type OllamaHealthResponse = {
 type OllamaModelsResponse = {
   baseUrl?: unknown;
   models?: unknown;
+  error?: unknown;
+};
+
+type LocalAISettingsResponse = {
+  provider?: unknown;
+  baseUrl?: unknown;
+  isDefault?: unknown;
+  isLocalhost?: unknown;
   error?: unknown;
 };
 
@@ -82,12 +93,18 @@ const providerSummaryBadge = getRequiredElement("provider-summary-badge", HTMLSp
 const providerSummaryDetail = getRequiredElement("provider-summary-detail", HTMLParagraphElement);
 const modelSummaryValue = getRequiredElement("model-summary-value", HTMLSpanElement);
 const profileSummaryValue = getRequiredElement("profile-summary-value", HTMLSpanElement);
+const endpointSummaryValue = getRequiredElement("endpoint-summary-value", HTMLSpanElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const quickPromptButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-quick-prompt]"));
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
 const previewOutput = getRequiredElement("preview-output", HTMLPreElement);
 const copyPreviewButton = getRequiredElement("copy-preview-button", HTMLButtonElement);
+const localAIEndpointInput = getRequiredElement("local-ai-endpoint", HTMLInputElement);
+const saveLocalAIEndpointButton = getRequiredElement("save-local-ai-endpoint-button", HTMLButtonElement);
+const resetLocalAIEndpointButton = getRequiredElement("reset-local-ai-endpoint-button", HTMLButtonElement);
+const localAIEndpointMessage = getRequiredElement("local-ai-endpoint-message", HTMLParagraphElement);
+const localAIPrivacyWarning = getRequiredElement("local-ai-privacy-warning", HTMLParagraphElement);
 
 let cachedSelectionText = "";
 let cachedPreviewText = "";
@@ -97,6 +114,9 @@ let availableOllamaModels: string[] = [];
 let selectedOllamaModel = "";
 let selectedTheme: ThemePreference = defaultThemePreference;
 let selectedAIProvider: AIProviderId = defaultAIProviderId;
+let currentLocalAIBaseUrl = defaultLocalAIBaseUrl;
+let isDefaultLocalAIBaseUrl = true;
+let isLocalhostLocalAIBaseUrl = true;
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
@@ -200,11 +220,15 @@ function updateProviderSummary(): void {
   const selectedProfile = writingProfiles[getSelectedWritingProfileId()];
 
   providerSummary.textContent = provider.label;
-  providerSummaryDetail.textContent = provider.description;
+  providerSummaryDetail.textContent =
+    provider.availability === "active"
+      ? `${provider.description} Endpoint attivo: ${currentLocalAIBaseUrl}`
+      : provider.description;
   providerSummaryBadge.textContent = isActiveProvider ? "Attivo" : "Futuro";
   providerSummaryBadge.dataset.state = isActiveProvider ? "active" : "inactive";
   modelSummaryValue.textContent = modelSummary;
   profileSummaryValue.textContent = selectedProfile.label;
+  endpointSummaryValue.textContent = isDefaultLocalAIBaseUrl ? "Locale standard" : currentLocalAIBaseUrl;
 }
 
 function applyQuickPrompt(promptId: QuickPromptId): void {
@@ -282,6 +306,36 @@ function updateModelSelect(models: string[]): void {
   updateProviderSummary();
 }
 
+function normalizeLocalAISettingsResponse(data: LocalAISettingsResponse): {
+  baseUrl: string;
+  isDefault: boolean;
+  isLocalhost: boolean;
+} {
+  return {
+    baseUrl: typeof data.baseUrl === "string" && data.baseUrl.trim().length > 0 ? data.baseUrl.trim() : defaultLocalAIBaseUrl,
+    isDefault: data.isDefault === true,
+    isLocalhost: data.isLocalhost === true
+  };
+}
+
+function applyLocalAISettingsResponse(
+  data: LocalAISettingsResponse,
+  message?: string
+): void {
+  const normalized = normalizeLocalAISettingsResponse(data);
+  currentLocalAIBaseUrl = normalized.baseUrl;
+  isDefaultLocalAIBaseUrl = normalized.isDefault;
+  isLocalhostLocalAIBaseUrl = normalized.isLocalhost;
+  localAIEndpointInput.value = currentLocalAIBaseUrl;
+  localAIEndpointMessage.textContent =
+    message ??
+    (isDefaultLocalAIBaseUrl
+      ? "Endpoint predefinito: http://localhost:11434"
+      : `Endpoint personalizzato attivo: ${currentLocalAIBaseUrl}`);
+  localAIPrivacyWarning.hidden = isLocalhostLocalAIBaseUrl;
+  updateProviderSummary();
+}
+
 function updateLocalStatusUi(): void {
   setStatusChip(bridgeStatusValue, isBridgeReachable ? "Attivo" : "Non raggiungibile", isBridgeReachable);
   setStatusChip(ollamaStatusValue, isOllamaReachable ? "Attivo" : "Non raggiungibile", isOllamaReachable);
@@ -289,7 +343,7 @@ function updateLocalStatusUi(): void {
   const provider = getAIProviderById(selectedAIProvider);
   providerStatusMessage.textContent =
     provider.id === "ollama-local"
-      ? "Ollama locale e' l'unico provider attivo nella v0.13.0. I provider cloud restano disabilitati."
+      ? "Ollama locale e' l'unico provider attivo nella v0.14.0. I provider cloud restano disabilitati."
       : `${provider.label} non e' ancora disponibile in questa release.`;
 
   if (!isBridgeReachable) {
@@ -334,6 +388,7 @@ function applyStoredPreferences(): void {
   aiProviderSelect.value = selectedAIProvider;
 
   applyTheme(selectedTheme);
+  localAIEndpointInput.value = currentLocalAIBaseUrl;
   updateProviderSummary();
 }
 
@@ -387,6 +442,65 @@ async function loadOllamaModels(): Promise<string[]> {
   return data.models.filter((model): model is string => typeof model === "string" && model.trim().length > 0);
 }
 
+async function fetchLocalAISettings(): Promise<LocalAISettingsResponse> {
+  return await fetchJson<LocalAISettingsResponse>(localAISettingsUrl);
+}
+
+async function saveLocalAISettings(): Promise<void> {
+  const requestedBaseUrl = localAIEndpointInput.value.trim();
+
+  if (requestedBaseUrl.length === 0) {
+    localAIEndpointMessage.textContent = "Inserisci un endpoint AI locale valido prima di salvare.";
+    return;
+  }
+
+  saveLocalAIEndpointButton.disabled = true;
+  resetLocalAIEndpointButton.disabled = true;
+  localAIEndpointMessage.textContent = "Salvataggio endpoint AI locale in corso...";
+
+  try {
+    const savedSettings = await fetchJson<LocalAISettingsResponse>(localAISettingsUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        baseUrl: requestedBaseUrl
+      })
+    });
+
+    applyLocalAISettingsResponse(savedSettings, `Endpoint AI locale salvato: ${savedSettings.baseUrl as string}`);
+    await refreshLocalStatus();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+    localAIEndpointMessage.textContent = `Impossibile salvare l'endpoint AI locale. ${message}`;
+  } finally {
+    saveLocalAIEndpointButton.disabled = false;
+    resetLocalAIEndpointButton.disabled = false;
+  }
+}
+
+async function resetLocalAISettings(): Promise<void> {
+  saveLocalAIEndpointButton.disabled = true;
+  resetLocalAIEndpointButton.disabled = true;
+  localAIEndpointMessage.textContent = "Ripristino endpoint AI locale predefinito in corso...";
+
+  try {
+    const resetSettings = await fetchJson<LocalAISettingsResponse>(localAISettingsResetUrl, {
+      method: "POST"
+    });
+
+    applyLocalAISettingsResponse(resetSettings, "Endpoint AI locale ripristinato al valore predefinito.");
+    await refreshLocalStatus();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+    localAIEndpointMessage.textContent = `Impossibile ripristinare l'endpoint AI locale. ${message}`;
+  } finally {
+    saveLocalAIEndpointButton.disabled = false;
+    resetLocalAIEndpointButton.disabled = false;
+  }
+}
+
 async function refreshLocalStatus(): Promise<void> {
   refreshStatusButton.disabled = true;
   bridgeStatusValue.textContent = "Verifica in corso...";
@@ -401,9 +515,32 @@ async function refreshLocalStatus(): Promise<void> {
     isOllamaReachable = false;
     availableOllamaModels = [];
     updateModelSelect([]);
+    applyLocalAISettingsResponse(
+      {
+        baseUrl: currentLocalAIBaseUrl,
+        isDefault: isDefaultLocalAIBaseUrl,
+        isLocalhost: isLocalhostLocalAIBaseUrl
+      },
+      "Il local-bridge non e' raggiungibile. L'endpoint mostrato e' l'ultimo noto nel task pane."
+    );
     updateLocalStatusUi();
     refreshStatusButton.disabled = false;
     return;
+  }
+
+  try {
+    const localAISettings = await fetchLocalAISettings();
+    applyLocalAISettingsResponse(localAISettings);
+  } catch (error) {
+    console.warn("Lettura impostazioni endpoint AI locale non riuscita.", error);
+    applyLocalAISettingsResponse(
+      {
+        baseUrl: currentLocalAIBaseUrl,
+        isDefault: isDefaultLocalAIBaseUrl,
+        isLocalhost: isLocalhostLocalAIBaseUrl
+      },
+      "Impossibile leggere l'endpoint AI locale dal bridge."
+    );
   }
 
   try {
@@ -639,6 +776,14 @@ Office.onReady((info) => {
     if (requestedTheme === "dark" || requestedTheme === "light" || requestedTheme === "system") {
       applyTheme(requestedTheme);
     }
+  });
+
+  saveLocalAIEndpointButton.addEventListener("click", () => {
+    void saveLocalAISettings();
+  });
+
+  resetLocalAIEndpointButton.addEventListener("click", () => {
+    void resetLocalAISettings();
   });
 
   writingProfileSelect.addEventListener("change", () => {

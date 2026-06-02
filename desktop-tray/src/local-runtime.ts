@@ -15,6 +15,8 @@ export type LocalOfficeAIStatus = {
   addinWord: ComponentStatus;
 };
 
+export type ComponentStartSource = "auto" | "manual" | "restart" | "self-check";
+
 type ComponentProcessInfo = {
   runProcess?: ChildProcess;
   logFilePath: string;
@@ -36,8 +38,21 @@ type SpawnedCommand = {
   displayCommand: string;
 };
 
+type LocalAISettingsResponse = {
+  baseUrl?: unknown;
+  isDefault?: unknown;
+  isLocalhost?: unknown;
+};
+
+type BridgeOllamaHealthResponse = {
+  status?: unknown;
+  baseUrl?: unknown;
+  error?: unknown;
+};
+
 const bridgeUrl = "http://localhost:3210/health";
-const ollamaUrl = "http://localhost:11434/api/tags";
+const bridgeLocalAISettingsUrl = "http://localhost:3210/settings/local-ai";
+const bridgeOllamaHealthUrl = "http://localhost:3210/ollama/health";
 const addinPort = 3000;
 const processStartupDelayMs = 2500;
 const buildTimeoutMs = 60_000;
@@ -103,6 +118,18 @@ async function checkHttpEndpoint(url: string): Promise<HttpStatusCheck> {
       detail: error instanceof Error ? error.message : "Non raggiungibile"
     };
   }
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { method: "GET" });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    const suffix = responseText.trim().length > 0 ? ` ${responseText.trim()}` : "";
+    throw new Error(`HTTP ${response.status}.${suffix}`.trim());
+  }
+
+  return (await response.json()) as T;
 }
 
 async function checkTcpPort(hostname: string, port: number): Promise<boolean> {
@@ -229,18 +256,58 @@ export class LocalOfficeAIRuntime {
     return this.logsDir;
   }
 
+  private logComponentMessage(componentName: ComponentName, message: string): void {
+    const logStream = createLogStream(this.componentProcesses[componentName].logFilePath);
+    writeProcessBanner(logStream, message);
+    logStream.end();
+  }
+
   async getStatus(): Promise<LocalOfficeAIStatus> {
-    const [ollama, localBridge, addinWordActive] = await Promise.all([
-      checkHttpEndpoint(ollamaUrl),
+    const [localBridge, addinWordActive] = await Promise.all([
       checkHttpEndpoint(bridgeUrl),
       checkTcpPort("127.0.0.1", addinPort)
     ]);
 
+    let ollama: ComponentStatus;
+
+    if (!localBridge.active) {
+      ollama = {
+        active: false,
+        detail: "Non verificabile finche' il local-bridge non e' attivo."
+      };
+    } else {
+      try {
+        let localAISettings: LocalAISettingsResponse | null = null;
+
+        try {
+          localAISettings = await fetchJson<LocalAISettingsResponse>(bridgeLocalAISettingsUrl);
+        } catch {
+          localAISettings = null;
+        }
+
+        const ollamaHealth = await fetchJson<BridgeOllamaHealthResponse>(bridgeOllamaHealthUrl);
+        const baseUrl =
+          typeof ollamaHealth.baseUrl === "string"
+            ? ollamaHealth.baseUrl
+            : localAISettings && typeof localAISettings.baseUrl === "string"
+              ? localAISettings.baseUrl
+              : "endpoint non specificato";
+        const isLocalhost = localAISettings?.isLocalhost === true;
+
+        ollama = {
+          active: true,
+          detail: `${isLocalhost ? "Raggiungibile" : "Raggiungibile su endpoint configurato"} (${baseUrl})`
+        };
+      } catch (error) {
+        ollama = {
+          active: false,
+          detail: error instanceof Error ? error.message : "Non raggiungibile"
+        };
+      }
+    }
+
     return {
-      ollama: {
-        active: ollama.active,
-        detail: ollama.active ? "Raggiungibile" : `Non raggiungibile (${ollama.detail})`
-      },
+      ollama,
       localBridge: {
         active: localBridge.active,
         detail: localBridge.active
@@ -256,27 +323,41 @@ export class LocalOfficeAIRuntime {
     };
   }
 
-  async startComponents(): Promise<void> {
-    const status = await this.getStatus();
+  async startComponents(source: ComponentStartSource = "manual"): Promise<void> {
+    let status = await this.getStatus();
+    const sourceLabel = `Tentativo avvio componenti (${source}).`;
 
-    if (!status.ollama.active) {
-      throw new Error("Ollama non risulta raggiungibile. Avvia Ollama e riprova.");
-    }
+    this.logComponentMessage("local-bridge", sourceLabel);
+    this.logComponentMessage("addin-word", sourceLabel);
 
     if (!status.localBridge.active) {
+      this.logComponentMessage("local-bridge", "local-bridge non attivo: avvio richiesto.");
       await this.startLocalBridge();
       await delay(processStartupDelayMs);
+      status = await this.getStatus();
+    } else {
+      this.logComponentMessage("local-bridge", "local-bridge gia' attivo: nessun duplicato avviato.");
+    }
+
+    if (!status.ollama.active) {
+      this.logComponentMessage(
+        "local-bridge",
+        `Endpoint AI locale non raggiungibile al momento dell'avvio componenti: ${status.ollama.detail}`
+      );
     }
 
     if (!status.addinWord.active) {
+      this.logComponentMessage("addin-word", "addin-word dev-server non attivo: avvio richiesto.");
       await this.startAddinWordDevServer();
       await delay(processStartupDelayMs);
+    } else {
+      this.logComponentMessage("addin-word", "addin-word dev-server gia' attivo: nessun duplicato avviato.");
     }
   }
 
   async restartComponents(): Promise<void> {
     await this.stopManagedComponents();
-    await this.startComponents();
+    await this.startComponents("restart");
   }
 
   async stopManagedComponents(): Promise<void> {

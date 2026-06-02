@@ -5,9 +5,15 @@ import {
   getOllamaConfig,
   listOllamaModels
 } from "./ollamaClient.js";
+import {
+  getLocalAISettings,
+  parseLocalAISettingsBody,
+  resetLocalAISettings,
+  saveLocalAISettings
+} from "./localAiSettings.js";
 
 const serviceName = "LocalOfficeAI Local Bridge";
-const serviceVersion = "0.3.0";
+const serviceVersion = "0.14.0";
 const port = 3210;
 const allowedOrigin = "https://localhost:3000";
 
@@ -126,6 +132,12 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (method === "GET" && url === "/settings/local-ai") {
+    const localAISettings = getLocalAISettings();
+    sendJson(response, 200, localAISettings);
+    return;
+  }
+
   if (method === "GET" && url === "/ollama/health") {
     const result = await checkOllamaHealth(ollamaConfig);
 
@@ -144,6 +156,42 @@ const server = createServer(async (request, response) => {
       service: "ollama",
       baseUrl: result.baseUrl
     });
+    return;
+  }
+
+  if (method === "POST" && url === "/settings/local-ai") {
+    try {
+      const bodyText = await collectRequestBody(request);
+      const parsedBody = parseLocalAISettingsBody(bodyText);
+
+      if ("error" in parsedBody) {
+        sendJson(response, 400, {
+          error: parsedBody.error
+        });
+        return;
+      }
+
+      const localAISettings = saveLocalAISettings(parsedBody.baseUrl);
+      sendJson(response, 200, localAISettings);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+      sendJson(response, 400, {
+        error: message
+      });
+    }
+    return;
+  }
+
+  if (method === "POST" && url === "/settings/local-ai/reset") {
+    try {
+      const localAISettings = resetLocalAISettings();
+      sendJson(response, 200, localAISettings);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+      sendJson(response, 500, {
+        error: `Impossibile ripristinare l'endpoint AI locale: ${message}`
+      });
+    }
     return;
   }
 
