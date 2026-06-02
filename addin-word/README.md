@@ -45,6 +45,8 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.14.0`
 
 I prompt rapidi compilano il campo della richiesta con un testo iniziale coerente con l'azione scelta. Il testo resta sempre modificabile manualmente prima di premere `Genera anteprima`.
 
+LocalOfficeAI genera anteprime singole orientate al risultato e non e' ancora una chat multi-turno: i prompt sono quindi costruiti per chiedere direttamente un output finale, evitando domande di chiarimento quando il testo disponibile consente una migliore ipotesi prudente.
+
 ## Impostazioni e informazioni
 
 - `⚙️ Impostazioni`: apre una vista interna al task pane che contiene:

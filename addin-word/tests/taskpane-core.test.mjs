@@ -26,7 +26,7 @@ test("buildPrompt combina profilo, richiesta utente e testo selezionato", () => 
   assert.match(prompt, /Profilo di scrittura: Neutro/);
   assert.match(prompt, /Richiesta dell'utente:\nRiscrivi il testo in modo più chiaro\./);
   assert.match(prompt, /Testo di partenza:\nTesto originale\./);
-  assert.match(prompt, /Restituisci solo il testo finale richiesto/);
+  assert.match(prompt, /Restituisci direttamente il testo finale richiesto/);
 });
 
 test("buildPrompt gestisce la richiesta libera senza testo selezionato", () => {
@@ -36,6 +36,15 @@ test("buildPrompt gestisce la richiesta libera senza testo selezionato", () => {
   assert.match(prompt, /Richiesta libera senza testo selezionato\./);
   assert.doesNotMatch(prompt, /Testo di partenza:/);
   assert.match(prompt, /Applica il profilo di scrittura selezionato/);
+});
+
+test("buildPrompt include regole anti-clarification e orientate al risultato", () => {
+  const prompt = buildPrompt("formale", "Correggi questo testo.", "Testo di prova.");
+
+  assert.match(prompt, /Non fare domande all'utente/);
+  assert.match(prompt, /Produci direttamente un risultato finale utilizzabile/);
+  assert.match(prompt, /fai la migliore ipotesi prudente/);
+  assert.match(prompt, /puoi aggiungere solo una breve nota finale/i);
 });
 
 test("buildPrompt resta coerente anche con richiesta utente vuota", () => {
@@ -92,6 +101,16 @@ test("i prompt rapidi restano testi iniziali modificabili e non istruzioni di in
     assert.ok(prompt.promptText.endsWith("."));
     assert.doesNotMatch(prompt.promptText, /documento Word|incolla manualmente|localhost|Ollama/i);
   }
+});
+
+test("il prompt rapido Correggi richiede una correzione diretta e non conversazionale", () => {
+  const prompt = quickPromptTemplates.find((item) => item.id === "correggi");
+
+  assert.ok(prompt);
+  assert.match(prompt.promptText, /Correggi direttamente grammatica, ortografia e punteggiatura/i);
+  assert.match(prompt.promptText, /Restituisci solo il testo corretto/i);
+  assert.match(prompt.promptText, /non fare domande/i);
+  assert.match(prompt.promptText, /non rifiutare una normale correzione testuale/i);
 });
 
 test("normalizeStoredPreferences applica i default quando i valori mancano", () => {

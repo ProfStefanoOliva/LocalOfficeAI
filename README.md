@@ -4,7 +4,7 @@ LocalOfficeAI è un progetto open source per la creazione di un add-in locale pe
 
 Il progetto è pensato per funzionare in locale, senza inviare il contenuto dei documenti a servizi cloud.
 
-Nella release `v0.14.0` il backend AI locale resta Ollama, ma il suo endpoint non e' piu' limitato a `http://localhost:11434`: puo' essere configurato anche verso un'istanza LAN, mantenendo comunque il `local-bridge` su `http://localhost:3210`.
+Nella release `v0.15.0` LocalOfficeAI aggiunge una prima fondazione di packaging portable della tray app e una guida piu' chiara per il sideload di Word su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
 
 ## Obiettivo iniziale
 
@@ -49,3 +49,23 @@ Note importanti:
 - il launcher non modifica firewall, registry o impostazioni di sistema;
 - se l'endpoint AI locale configurato nel bridge non e' raggiungibile, il launcher o la tray mostreranno lo stato non attivo;
 - il flusso stabile resta invariato: anteprima locale -> copia negli appunti -> incolla manuale nel documento.
+
+## Guida Windows e Word
+
+Per la release `v0.15.0` sono disponibili guide dedicate:
+
+- [Installazione Windows](docs/INSTALL_WINDOWS.md)
+- [Configurazione Word con cartella condivisa](docs/WORD_SIDELOAD_WINDOWS.md)
+- [First Run Checklist](docs/FIRST_RUN_CHECKLIST.md)
+- [Desktop Tray](docs/desktop-tray.md)
+
+## Packaging tray
+
+Il packaging introdotto in `v0.15.0` e' prudente:
+
+- produce una base portable della tray app;
+- la cartella `release_candidates/LocalOfficeAI-v0.15.0` resta il modo piu' semplice per una prova locale completa;
+- puo' generare artefatti ZIP per Windows;
+- non crea ancora un installer definitivo one-click;
+- non abilita autostart con Windows;
+- non introduce servizi Windows.
