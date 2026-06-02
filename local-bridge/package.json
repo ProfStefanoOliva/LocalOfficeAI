@@ -1,0 +1,16 @@
+{
+  "name": "localofficeai-local-bridge",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Base tecnica minimale del servizio locale LocalOfficeAI.",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "clean": "node ./scripts/clean.mjs",
+    "start": "node ./dist/server.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "typescript": "^5.8.3"
+  }
+}
