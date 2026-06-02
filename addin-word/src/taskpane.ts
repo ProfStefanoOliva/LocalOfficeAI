@@ -1,10 +1,14 @@
 import {
+  aiProviderDefinitions,
   buildPrompt,
   chooseOllamaModel,
   createViewState,
+  defaultAIProviderId,
   defaultThemePreference,
+  getAIProviderById,
   normalizeStoredPreferences,
   quickPromptTemplates,
+  type AIProviderId,
   type QuickPromptId,
   type StoredPreferences,
   type TaskpaneViewName,
@@ -64,12 +68,20 @@ const closeInfoButton = getRequiredElement("close-info-button", HTMLButtonElemen
 const bridgeStatusValue = getRequiredElement("bridge-status-value", HTMLSpanElement);
 const ollamaStatusValue = getRequiredElement("ollama-status-value", HTMLSpanElement);
 const modelStatusMessage = getRequiredElement("model-status-message", HTMLParagraphElement);
+const providerStatusMessage = getRequiredElement("provider-status-message", HTMLParagraphElement);
 const refreshStatusButton = getRequiredElement("refresh-status-button", HTMLButtonElement);
 const readSelectionButton = getRequiredElement("read-selection-button", HTMLButtonElement);
 const clearSelectionButton = getRequiredElement("clear-selection-button", HTMLButtonElement);
 const writingProfileSelect = getRequiredElement("writing-profile", HTMLSelectElement);
+const defaultWritingProfileSelect = getRequiredElement("default-writing-profile", HTMLSelectElement);
+const aiProviderSelect = getRequiredElement("ai-provider", HTMLSelectElement);
 const ollamaModelSelect = getRequiredElement("ollama-model", HTMLSelectElement);
 const themeSelect = getRequiredElement("theme-select", HTMLSelectElement);
+const providerSummary = getRequiredElement("provider-summary", HTMLParagraphElement);
+const providerSummaryBadge = getRequiredElement("provider-summary-badge", HTMLSpanElement);
+const providerSummaryDetail = getRequiredElement("provider-summary-detail", HTMLParagraphElement);
+const modelSummaryValue = getRequiredElement("model-summary-value", HTMLSpanElement);
+const profileSummaryValue = getRequiredElement("profile-summary-value", HTMLSpanElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const quickPromptButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-quick-prompt]"));
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
@@ -84,6 +96,7 @@ let isOllamaReachable = false;
 let availableOllamaModels: string[] = [];
 let selectedOllamaModel = "";
 let selectedTheme: ThemePreference = defaultThemePreference;
+let selectedAIProvider: AIProviderId = defaultAIProviderId;
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
@@ -159,7 +172,8 @@ function writeStoredPreferences(): void {
       JSON.stringify({
         theme: selectedTheme,
         writingProfile: writingProfileSelect.value,
-        ollamaModel: selectedOllamaModel
+        ollamaModel: selectedOllamaModel,
+        aiProvider: selectedAIProvider
       })
     );
   } catch (error) {
@@ -172,6 +186,25 @@ function applyTheme(theme: ThemePreference): void {
   document.body.dataset.theme = theme;
   themeSelect.value = theme;
   writeStoredPreferences();
+}
+
+function updateProviderSummary(): void {
+  const provider = getAIProviderById(selectedAIProvider);
+  const isActiveProvider = provider.availability === "active";
+  const modelSummary =
+    selectedOllamaModel.trim().length > 0
+      ? selectedOllamaModel
+      : availableOllamaModels.length > 0
+        ? "Seleziona un modello nelle impostazioni"
+        : "Nessun modello disponibile";
+  const selectedProfile = writingProfiles[getSelectedWritingProfileId()];
+
+  providerSummary.textContent = provider.label;
+  providerSummaryDetail.textContent = provider.description;
+  providerSummaryBadge.textContent = isActiveProvider ? "Attivo" : "Futuro";
+  providerSummaryBadge.dataset.state = isActiveProvider ? "active" : "inactive";
+  modelSummaryValue.textContent = modelSummary;
+  profileSummaryValue.textContent = selectedProfile.label;
 }
 
 function applyQuickPrompt(promptId: QuickPromptId): void {
@@ -231,6 +264,7 @@ function updateModelSelect(models: string[]): void {
     ollamaModelSelect.appendChild(placeholderOption);
     ollamaModelSelect.disabled = true;
     selectedOllamaModel = "";
+    updateProviderSummary();
     return;
   }
 
@@ -245,28 +279,39 @@ function updateModelSelect(models: string[]): void {
   selectedOllamaModel = chooseOllamaModel(models, preferredModel, previousSelection);
   ollamaModelSelect.value = selectedOllamaModel;
   writeStoredPreferences();
+  updateProviderSummary();
 }
 
 function updateLocalStatusUi(): void {
   setStatusChip(bridgeStatusValue, isBridgeReachable ? "Attivo" : "Non raggiungibile", isBridgeReachable);
   setStatusChip(ollamaStatusValue, isOllamaReachable ? "Attivo" : "Non raggiungibile", isOllamaReachable);
 
+  const provider = getAIProviderById(selectedAIProvider);
+  providerStatusMessage.textContent =
+    provider.id === "ollama-local"
+      ? "Ollama locale e' l'unico provider attivo nella v0.13.0. I provider cloud restano disabilitati."
+      : `${provider.label} non e' ancora disponibile in questa release.`;
+
   if (!isBridgeReachable) {
     modelStatusMessage.textContent = "Il local-bridge non e' raggiungibile su http://localhost:3210.";
+    updateProviderSummary();
     return;
   }
 
   if (!isOllamaReachable) {
     modelStatusMessage.textContent = "Ollama non e' raggiungibile tramite il local-bridge.";
+    updateProviderSummary();
     return;
   }
 
   if (availableOllamaModels.length === 0) {
     modelStatusMessage.textContent = "Ollama e' attivo, ma non risultano modelli disponibili.";
+    updateProviderSummary();
     return;
   }
 
   modelStatusMessage.textContent = `Modelli disponibili: ${availableOllamaModels.length}.`;
+  updateProviderSummary();
 }
 
 function getSelectedWritingProfileId(): WritingProfileId {
@@ -283,9 +328,13 @@ function applyStoredPreferences(): void {
   const preferences = normalizeStoredPreferences(readStoredPreferences());
 
   selectedTheme = preferences.theme;
+  selectedAIProvider = preferences.aiProvider;
   writingProfileSelect.value = preferences.writingProfile;
+  defaultWritingProfileSelect.value = preferences.writingProfile;
+  aiProviderSelect.value = selectedAIProvider;
 
   applyTheme(selectedTheme);
+  updateProviderSummary();
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -471,6 +520,11 @@ async function generatePreview(): Promise<void> {
   const selectedProfileId = getSelectedWritingProfileId();
   const hasSelectionText = cachedSelectionText.trim().length > 0;
 
+  if (selectedAIProvider !== "ollama-local") {
+    showPreviewMessage("Il provider selezionato non e' ancora disponibile. Usa Ollama locale nelle impostazioni.");
+    return;
+  }
+
   if (!hasSelectionText && userPrompt.length === 0) {
     showPreviewMessage("Scrivi una richiesta oppure seleziona un testo nel documento e premi Leggi selezione.");
     return;
@@ -588,11 +642,35 @@ Office.onReady((info) => {
   });
 
   writingProfileSelect.addEventListener("change", () => {
+    defaultWritingProfileSelect.value = writingProfileSelect.value;
+    updateProviderSummary();
+    writeStoredPreferences();
+  });
+
+  defaultWritingProfileSelect.addEventListener("change", () => {
+    writingProfileSelect.value = defaultWritingProfileSelect.value;
+    updateProviderSummary();
+    writeStoredPreferences();
+  });
+
+  aiProviderSelect.addEventListener("change", () => {
+    const requestedProvider = aiProviderSelect.value as AIProviderId;
+    const provider = getAIProviderById(requestedProvider);
+
+    if (provider.availability !== "active") {
+      aiProviderSelect.value = selectedAIProvider;
+      updateLocalStatusUi();
+      return;
+    }
+
+    selectedAIProvider = requestedProvider;
+    updateLocalStatusUi();
     writeStoredPreferences();
   });
 
   ollamaModelSelect.addEventListener("change", () => {
     selectedOllamaModel = ollamaModelSelect.value.trim();
+    updateProviderSummary();
     writeStoredPreferences();
   });
 
@@ -617,6 +695,7 @@ Office.onReady((info) => {
   updateLocalStatusUi();
   updateClearSelectionButtonState();
   updateCopyPreviewButtonState();
+  updateProviderSummary();
   showView("main");
   void refreshLocalStatus();
 });

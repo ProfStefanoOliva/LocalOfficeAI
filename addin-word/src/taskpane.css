@@ -164,6 +164,10 @@ h1 {
   gap: 0.75rem;
 }
 
+.taskpane__section-header--stacked {
+  align-items: flex-start;
+}
+
 .taskpane__actions button {
   width: 100%;
 }
@@ -284,6 +288,40 @@ h1 {
   font-weight: 700;
   margin-bottom: 0.6rem;
   color: var(--text-primary);
+}
+
+.taskpane__label--compact {
+  margin-bottom: 0.35rem;
+}
+
+.taskpane__summary-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.taskpane__summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.95rem 0 1rem;
+}
+
+.taskpane__summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.taskpane__summary-value {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: right;
 }
 
 .taskpane__quick-prompts-section {

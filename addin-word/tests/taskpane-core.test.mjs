@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 
 import {
+  aiProviderDefinitions,
   buildPrompt,
   chooseOllamaModel,
   createViewState,
+  defaultAIProviderId,
   defaultThemePreference,
   defaultWritingProfileId,
+  getAIProviderById,
   normalizeStoredPreferences,
   quickPromptTemplates,
   writingProfiles
@@ -97,18 +100,46 @@ test("normalizeStoredPreferences applica i default quando i valori mancano", () 
   assert.equal(normalized.theme, defaultThemePreference);
   assert.equal(normalized.writingProfile, defaultWritingProfileId);
   assert.equal(normalized.ollamaModel, "");
+  assert.equal(normalized.aiProvider, defaultAIProviderId);
 });
 
 test("normalizeStoredPreferences scarta valori non validi ma conserva quelli corretti", () => {
   const normalized = normalizeStoredPreferences({
     theme: "not-valid",
     writingProfile: "tecnico",
-    ollamaModel: " qwen2.5-coder:1.5b "
+    ollamaModel: " qwen2.5-coder:1.5b ",
+    aiProvider: "ollama-local"
   });
 
   assert.equal(normalized.theme, defaultThemePreference);
   assert.equal(normalized.writingProfile, "tecnico");
   assert.equal(normalized.ollamaModel, "qwen2.5-coder:1.5b");
+  assert.equal(normalized.aiProvider, "ollama-local");
+});
+
+test("i provider AI mantengono Ollama locale come default attivo e i provider cloud come placeholder futuri", () => {
+  assert.equal(defaultAIProviderId, "ollama-local");
+  assert.equal(getAIProviderById("ollama-local").availability, "active");
+
+  const futureProviders = aiProviderDefinitions.filter((provider) => provider.id !== "ollama-local");
+
+  assert.ok(futureProviders.length >= 3);
+
+  for (const provider of futureProviders) {
+    assert.equal(provider.availability, "future");
+    assert.equal(provider.transport, "cloud");
+    assert.match(provider.description, /non ancora disponibile/i);
+  }
+});
+
+test("normalizeStoredPreferences torna a Ollama locale se il provider salvato non e' valido", () => {
+  const normalized = normalizeStoredPreferences({
+    aiProvider: "provider-non-valido",
+    writingProfile: "narrativo"
+  });
+
+  assert.equal(normalized.aiProvider, "ollama-local");
+  assert.equal(normalized.writingProfile, "narrativo");
 });
 
 test("chooseOllamaModel privilegia preferenza valida, poi selezione precedente, poi primo modello", () => {

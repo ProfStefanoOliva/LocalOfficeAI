@@ -13,7 +13,7 @@
       <header class="taskpane__header">
         <div class="taskpane__header-top">
           <div>
-            <p class="taskpane__eyebrow">Word Add-in v0.10.0</p>
+            <p class="taskpane__eyebrow">Word Add-in v0.13.0</p>
             <h1>LocalOfficeAI</h1>
           </div>
           <div class="taskpane__header-actions">
@@ -31,24 +31,6 @@
       </header>
 
       <div id="main-view" class="taskpane__view taskpane-view taskpane-view--active" aria-hidden="false">
-        <section class="taskpane__output" aria-live="polite">
-          <div class="taskpane__section-header">
-            <h2>Stato locale</h2>
-            <button id="refresh-status-button" class="taskpane__mini-button" type="button">Aggiorna stato</button>
-          </div>
-          <div class="taskpane__status-grid">
-            <div class="taskpane__status-row">
-              <span class="taskpane__status-label">Local-bridge</span>
-              <span id="bridge-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
-            </div>
-            <div class="taskpane__status-row">
-              <span class="taskpane__status-label">Ollama</span>
-              <span id="ollama-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
-            </div>
-          </div>
-          <p id="model-status-message" class="taskpane__status">Premi Aggiorna stato per verificare il bridge locale e Ollama.</p>
-        </section>
-
         <section class="taskpane__actions" aria-label="Azioni principali">
           <button id="read-selection-button" type="button">Leggi selezione</button>
         </section>
@@ -67,6 +49,27 @@
         </section>
 
         <section class="taskpane__panel">
+          <div class="taskpane__section-header taskpane__section-header--stacked">
+            <div>
+              <span class="taskpane__label taskpane__label--compact">Motore AI</span>
+              <p id="provider-summary" class="taskpane__summary-title">Ollama locale</p>
+            </div>
+            <span id="provider-summary-badge" class="taskpane__status-badge" data-state="active">Attivo</span>
+          </div>
+          <p id="provider-summary-detail" class="taskpane__hint taskpane__hint--compact">
+            LocalOfficeAI usa Ollama locale come unico provider operativo in questa release.
+          </p>
+          <div class="taskpane__summary-grid">
+            <div class="taskpane__summary-row">
+              <span class="taskpane__status-label">Modello selezionato</span>
+              <span id="model-summary-value" class="taskpane__summary-value">Nessun modello disponibile</span>
+            </div>
+            <div class="taskpane__summary-row">
+              <span class="taskpane__status-label">Profilo corrente</span>
+              <span id="profile-summary-value" class="taskpane__summary-value">Neutro</span>
+            </div>
+          </div>
+
           <label class="taskpane__label" for="writing-profile">Profilo di scrittura</label>
           <select id="writing-profile" class="taskpane__select">
             <option value="neutro">Neutro</option>
@@ -76,10 +79,6 @@
             <option value="accademico">Accademico</option>
             <option value="sintetico">Sintetico</option>
             <option value="narrativo">Narrativo</option>
-          </select>
-          <label class="taskpane__label" for="ollama-model">Modello Ollama</label>
-          <select id="ollama-model" class="taskpane__select">
-            <option value="">Nessun modello disponibile</option>
           </select>
           <div class="taskpane__quick-prompts-section">
             <span class="taskpane__label">Prompt rapidi</span>
@@ -133,6 +132,51 @@
         </div>
 
         <section class="taskpane__panel">
+          <div class="taskpane__section-header">
+            <h3>Provider AI</h3>
+            <button id="refresh-status-button" class="taskpane__mini-button" type="button">Aggiorna stato</button>
+          </div>
+          <label class="taskpane__label" for="ai-provider">Motore AI</label>
+          <select id="ai-provider" class="taskpane__select">
+            <option value="ollama-local">Ollama locale</option>
+            <option value="openai-compatible" disabled>OpenAI-compatible (futuro)</option>
+            <option value="claude" disabled>Claude (futuro)</option>
+            <option value="deepseek-compatible" disabled>DeepSeek e compatibili (futuro)</option>
+          </select>
+          <p id="provider-status-message" class="taskpane__hint">
+            Ollama locale e' l'unico provider attivo nella v0.13.0. I provider cloud restano disabilitati.
+          </p>
+
+          <div class="taskpane__status-grid">
+            <div class="taskpane__status-row">
+              <span class="taskpane__status-label">Local-bridge</span>
+              <span id="bridge-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+            </div>
+            <div class="taskpane__status-row">
+              <span class="taskpane__status-label">Ollama</span>
+              <span id="ollama-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+            </div>
+          </div>
+          <p id="model-status-message" class="taskpane__status">Premi Aggiorna stato per verificare il bridge locale e Ollama.</p>
+
+          <label class="taskpane__label" for="ollama-model">Modello Ollama</label>
+          <select id="ollama-model" class="taskpane__select">
+            <option value="">Nessun modello disponibile</option>
+          </select>
+        </section>
+
+        <section class="taskpane__panel">
+          <h3>Preferenze</h3>
+          <label class="taskpane__label" for="default-writing-profile">Profilo predefinito</label>
+          <select id="default-writing-profile" class="taskpane__select">
+            <option value="neutro">Neutro</option>
+            <option value="didattico">Didattico</option>
+            <option value="formale">Formale</option>
+            <option value="tecnico">Tecnico</option>
+            <option value="accademico">Accademico</option>
+            <option value="sintetico">Sintetico</option>
+            <option value="narrativo">Narrativo</option>
+          </select>
           <label class="taskpane__label" for="theme-select">Tema</label>
           <select id="theme-select" class="taskpane__select">
             <option value="system">Sistema</option>
@@ -140,7 +184,17 @@
             <option value="light">Chiaro</option>
           </select>
           <p class="taskpane__hint">
-            LocalOfficeAI salva in locale il tema scelto e ricorda anche profilo di scrittura e modello Ollama selezionati.
+            LocalOfficeAI salva in locale il tema scelto e ricorda anche provider, profilo di scrittura e modello Ollama selezionati.
+          </p>
+        </section>
+
+        <section class="taskpane__output">
+          <h3>Privacy essenziale</h3>
+          <p class="taskpane__status">
+            Con Ollama locale il testo viene inviato solo al local-bridge locale e a Ollama configurato su <code>localhost</code>.
+          </p>
+          <p class="taskpane__status">
+            I provider cloud futuri potranno inviare testo a servizi esterni solo dopo una scelta esplicita dell'utente. Nella v0.13.0 non vengono introdotte chiamate cloud.
           </p>
         </section>
       </section>
@@ -158,7 +212,7 @@
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Versione</span>
-              <p>v0.10.0</p>
+              <p>v0.13.0</p>
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Descrizione</span>
@@ -170,6 +224,8 @@
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Ultimi aggiornamenti</span>
               <ul class="taskpane__info-updates">
+                <li>v0.13.0: base provider AI multipli, stato locale spostato in Impostazioni, Ollama locale confermato come unico provider attivo.</li>
+                <li>v0.12.0: tray app Electron per avvio e controllo locale dei componenti.</li>
                 <li>v0.10.0: primi test automatici su prompt builder, preferenze e logica delle viste.</li>
                 <li>v0.9.0: prompt rapidi per compilare richieste modificabili dall'utente.</li>
                 <li>v0.8.0: impostazioni locali, tema chiaro/scuro, preferenze salvate, vista informazioni.</li>
@@ -190,7 +246,7 @@
               <span class="taskpane__info-label">Privacy</span>
               <p>
                 LocalOfficeAI lavora in locale. Il testo viene inviato solo al local-bridge configurato su
-                <code>localhost</code> e non a servizi cloud.
+                <code>localhost</code> e non a servizi cloud. I provider cloud futuri non sono attivi nella v0.13.0.
               </p>
             </div>
             <div class="taskpane__info-item">
