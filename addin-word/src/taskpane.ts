@@ -25,10 +25,14 @@ type WritingProfile = {
   instructions: string[];
 };
 
+type ThemePreference = "system" | "dark" | "light";
+type TaskpaneViewName = "main" | "settings" | "info";
+
 const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
 const bridgeHealthUrl = "http://localhost:3210/health";
 const ollamaHealthUrl = "http://localhost:3210/ollama/health";
 const ollamaModelsUrl = "http://localhost:3210/ollama/models";
+const preferencesStorageKey = "localofficeai.taskpane.preferences";
 const writingProfiles: Record<WritingProfileId, WritingProfile> = {
   neutro: {
     label: "Neutro",
@@ -122,13 +126,23 @@ type OllamaModelsResponse = {
 
 const statusMessage = getRequiredElement("status-message", HTMLParagraphElement);
 const selectionOutput = getRequiredElement("selection-output", HTMLPreElement);
+const taskpaneRoot = document.querySelector(".taskpane");
+const mainView = getRequiredElement("main-view", HTMLDivElement);
+const settingsView = getRequiredElement("settings-view", HTMLElement);
+const infoView = getRequiredElement("info-view", HTMLElement);
+const openSettingsButton = getRequiredElement("open-settings-button", HTMLButtonElement);
+const openInfoButton = getRequiredElement("open-info-button", HTMLButtonElement);
+const closeSettingsButton = getRequiredElement("close-settings-button", HTMLButtonElement);
+const closeInfoButton = getRequiredElement("close-info-button", HTMLButtonElement);
 const bridgeStatusValue = getRequiredElement("bridge-status-value", HTMLSpanElement);
 const ollamaStatusValue = getRequiredElement("ollama-status-value", HTMLSpanElement);
 const modelStatusMessage = getRequiredElement("model-status-message", HTMLParagraphElement);
 const refreshStatusButton = getRequiredElement("refresh-status-button", HTMLButtonElement);
 const readSelectionButton = getRequiredElement("read-selection-button", HTMLButtonElement);
+const clearSelectionButton = getRequiredElement("clear-selection-button", HTMLButtonElement);
 const writingProfileSelect = getRequiredElement("writing-profile", HTMLSelectElement);
 const ollamaModelSelect = getRequiredElement("ollama-model", HTMLSelectElement);
+const themeSelect = getRequiredElement("theme-select", HTMLSelectElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
@@ -141,11 +155,19 @@ let isBridgeReachable = false;
 let isOllamaReachable = false;
 let availableOllamaModels: string[] = [];
 let selectedOllamaModel = "";
+let selectedTheme: ThemePreference = "system";
+
+type StoredPreferences = {
+  theme?: unknown;
+  writingProfile?: unknown;
+  ollamaModel?: unknown;
+};
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
   selectionOutput.hidden = true;
   selectionOutput.textContent = "";
+  updateClearSelectionButtonState();
 }
 
 function showSelection(text: string): void {
@@ -153,6 +175,7 @@ function showSelection(text: string): void {
   selectionOutput.textContent = text;
   selectionOutput.hidden = false;
   cachedSelectionText = text;
+  updateClearSelectionButtonState();
 }
 
 function clearPreviewState(): void {
@@ -182,6 +205,77 @@ function updateCopyPreviewButtonState(): void {
   copyPreviewButton.disabled = cachedPreviewText.trim().length === 0;
 }
 
+function updateClearSelectionButtonState(): void {
+  clearSelectionButton.disabled = cachedSelectionText.trim().length === 0;
+}
+
+function clearStoredSelection(): void {
+  cachedSelectionText = "";
+  showMessage("Nessun testo selezionato. Puoi scrivere una richiesta libera oppure leggere una nuova selezione.");
+}
+
+function readStoredPreferences(): StoredPreferences {
+  try {
+    const rawPreferences = window.localStorage.getItem(preferencesStorageKey);
+
+    if (!rawPreferences) {
+      return {};
+    }
+
+    const parsed = JSON.parse(rawPreferences) as StoredPreferences;
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch (error) {
+    console.warn("Lettura preferenze locali non riuscita.", error);
+    return {};
+  }
+}
+
+function writeStoredPreferences(): void {
+  try {
+    window.localStorage.setItem(
+      preferencesStorageKey,
+      JSON.stringify({
+        theme: selectedTheme,
+        writingProfile: writingProfileSelect.value,
+        ollamaModel: selectedOllamaModel
+      })
+    );
+  } catch (error) {
+    console.warn("Salvataggio preferenze locali non riuscito.", error);
+  }
+}
+
+function applyTheme(theme: ThemePreference): void {
+  selectedTheme = theme;
+  document.body.dataset.theme = theme;
+  themeSelect.value = theme;
+  writeStoredPreferences();
+}
+
+function setViewVisibility(view: HTMLElement, isActive: boolean): void {
+  view.hidden = !isActive;
+  view.setAttribute("aria-hidden", String(!isActive));
+  view.classList.toggle("taskpane-view--active", isActive);
+  view.classList.toggle("is-hidden", !isActive);
+}
+
+function resetTaskpaneScroll(): void {
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  if (taskpaneRoot instanceof HTMLElement) {
+    taskpaneRoot.scrollTop = 0;
+  }
+}
+
+function showView(viewName: TaskpaneViewName): void {
+  setViewVisibility(mainView, viewName === "main");
+  setViewVisibility(settingsView, viewName === "settings");
+  setViewVisibility(infoView, viewName === "info");
+  resetTaskpaneScroll();
+}
+
 function setStatusChip(element: HTMLSpanElement, label: string, isActive: boolean): void {
   element.textContent = label;
   element.dataset.state = isActive ? "active" : "inactive";
@@ -189,6 +283,7 @@ function setStatusChip(element: HTMLSpanElement, label: string, isActive: boolea
 
 function updateModelSelect(models: string[]): void {
   const previousSelection = selectedOllamaModel;
+  const preferredModel = readStoredPreferences().ollamaModel;
   ollamaModelSelect.innerHTML = "";
 
   if (models.length === 0) {
@@ -209,8 +304,15 @@ function updateModelSelect(models: string[]): void {
   }
 
   ollamaModelSelect.disabled = false;
-  selectedOllamaModel = models.includes(previousSelection) ? previousSelection : models[0];
+  if (typeof preferredModel === "string" && models.includes(preferredModel)) {
+    selectedOllamaModel = preferredModel;
+  } else if (models.includes(previousSelection)) {
+    selectedOllamaModel = previousSelection;
+  } else {
+    selectedOllamaModel = models[0];
+  }
   ollamaModelSelect.value = selectedOllamaModel;
+  writeStoredPreferences();
 }
 
 function updateLocalStatusUi(): void {
@@ -245,12 +347,47 @@ function getSelectedWritingProfileId(): WritingProfileId {
   return "neutro";
 }
 
+function applyStoredPreferences(): void {
+  const preferences = readStoredPreferences();
+
+  if (preferences.theme === "dark" || preferences.theme === "light" || preferences.theme === "system") {
+    selectedTheme = preferences.theme;
+  }
+
+  if (typeof preferences.writingProfile === "string" && preferences.writingProfile in writingProfiles) {
+    writingProfileSelect.value = preferences.writingProfile;
+  }
+
+  applyTheme(selectedTheme);
+}
+
 function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedText: string): string {
   const profile = writingProfiles[profileId];
   const profileInstructions = profile.instructions.map((instruction) => `- ${instruction}`).join("\n");
+  const trimmedSelectedText = selectedText.trim();
 
   // Keep prompt construction outside the UI handler so profile rules stay explicit,
   // readable, and easy to inspect during development and review.
+  if (trimmedSelectedText.length === 0) {
+    return [
+      "Ruolo:",
+      "Sei LocalOfficeAI e devi rispondere alla richiesta dell'utente seguendo il profilo di scrittura selezionato.",
+      "",
+      `Profilo di scrittura: ${profile.label}`,
+      "Istruzioni del profilo:",
+      profileInstructions,
+      "",
+      "Modalita':",
+      "Richiesta libera senza testo selezionato.",
+      "",
+      "Richiesta dell'utente:",
+      userPrompt,
+      "",
+      "Output richiesto:",
+      "Applica il profilo di scrittura selezionato e restituisci solo il testo finale, salvo richiesta diversa dell'utente."
+    ].join("\n");
+  }
+
   return [
     "Ruolo:",
     "Sei LocalOfficeAI e devi riscrivere o trasformare il testo fornito seguendo il profilo di scrittura selezionato.",
@@ -263,7 +400,7 @@ function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedTe
     userPrompt,
     "",
     "Testo di partenza:",
-    selectedText,
+    trimmedSelectedText,
     "",
     "Output richiesto:",
     "Restituisci solo il testo finale richiesto, senza titoli, note o spiegazioni aggiuntive."
@@ -451,13 +588,14 @@ function getUserFacingBridgeError(message: string): string {
 async function generatePreview(): Promise<void> {
   const userPrompt = userPromptInput.value.trim();
   const selectedProfileId = getSelectedWritingProfileId();
+  const hasSelectionText = cachedSelectionText.trim().length > 0;
 
-  if (cachedSelectionText.trim().length === 0) {
-    showPreviewMessage("Seleziona un testo nel documento e premi Leggi selezione.");
+  if (!hasSelectionText && userPrompt.length === 0) {
+    showPreviewMessage("Scrivi una richiesta oppure seleziona un testo nel documento e premi Leggi selezione.");
     return;
   }
 
-  if (userPrompt.length === 0) {
+  if (hasSelectionText && userPrompt.length === 0) {
     showPreviewMessage("Scrivi una richiesta per generare l'anteprima.");
     return;
   }
@@ -532,6 +670,10 @@ Office.onReady((info) => {
     void readCurrentSelection();
   });
 
+  clearSelectionButton.addEventListener("click", () => {
+    clearStoredSelection();
+  });
+
   generatePreviewButton.addEventListener("click", () => {
     void generatePreview();
   });
@@ -540,16 +682,48 @@ Office.onReady((info) => {
     void refreshLocalStatus();
   });
 
+  openSettingsButton.addEventListener("click", () => {
+    showView("settings");
+  });
+
+  openInfoButton.addEventListener("click", () => {
+    showView("info");
+  });
+
+  closeSettingsButton.addEventListener("click", () => {
+    showView("main");
+  });
+
+  closeInfoButton.addEventListener("click", () => {
+    showView("main");
+  });
+
+  themeSelect.addEventListener("change", () => {
+    const requestedTheme = themeSelect.value;
+
+    if (requestedTheme === "dark" || requestedTheme === "light" || requestedTheme === "system") {
+      applyTheme(requestedTheme);
+    }
+  });
+
+  writingProfileSelect.addEventListener("change", () => {
+    writeStoredPreferences();
+  });
+
   ollamaModelSelect.addEventListener("change", () => {
     selectedOllamaModel = ollamaModelSelect.value.trim();
+    writeStoredPreferences();
   });
 
   copyPreviewButton.addEventListener("click", () => {
     void copyGeneratedPreview();
   });
 
+  applyStoredPreferences();
   updateModelSelect([]);
   updateLocalStatusUi();
+  updateClearSelectionButtonState();
   updateCopyPreviewButtonState();
+  showView("main");
   void refreshLocalStatus();
 });

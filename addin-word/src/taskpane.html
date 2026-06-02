@@ -11,80 +11,187 @@
   <body>
     <main class="taskpane">
       <header class="taskpane__header">
-        <p class="taskpane__eyebrow">Word Add-in v0.7.0</p>
-        <h1>LocalOfficeAI</h1>
+        <div class="taskpane__header-top">
+          <div>
+            <p class="taskpane__eyebrow">Word Add-in v0.8.0</p>
+            <h1>LocalOfficeAI</h1>
+          </div>
+          <div class="taskpane__header-actions">
+            <button id="open-settings-button" class="taskpane__icon-button" type="button" aria-label="Apri impostazioni">
+              ⚙️
+            </button>
+            <button id="open-info-button" class="taskpane__icon-button" type="button" aria-label="Apri informazioni">
+              ❓
+            </button>
+          </div>
+        </div>
         <p class="taskpane__description">
           Legge soltanto il testo selezionato nel documento e lo mostra qui nel pannello.
         </p>
       </header>
 
-      <section class="taskpane__output" aria-live="polite">
-        <div class="taskpane__section-header">
-          <h2>Stato locale</h2>
-          <button id="refresh-status-button" class="taskpane__mini-button" type="button">Aggiorna stato</button>
-        </div>
-        <div class="taskpane__status-grid">
-          <div class="taskpane__status-row">
-            <span class="taskpane__status-label">Local-bridge</span>
-            <span id="bridge-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+      <div id="main-view" class="taskpane__view taskpane-view taskpane-view--active" aria-hidden="false">
+        <section class="taskpane__output" aria-live="polite">
+          <div class="taskpane__section-header">
+            <h2>Stato locale</h2>
+            <button id="refresh-status-button" class="taskpane__mini-button" type="button">Aggiorna stato</button>
           </div>
-          <div class="taskpane__status-row">
-            <span class="taskpane__status-label">Ollama</span>
-            <span id="ollama-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+          <div class="taskpane__status-grid">
+            <div class="taskpane__status-row">
+              <span class="taskpane__status-label">Local-bridge</span>
+              <span id="bridge-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+            </div>
+            <div class="taskpane__status-row">
+              <span class="taskpane__status-label">Ollama</span>
+              <span id="ollama-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+            </div>
+          </div>
+          <p id="model-status-message" class="taskpane__status">Premi Aggiorna stato per verificare il bridge locale e Ollama.</p>
+        </section>
+
+        <section class="taskpane__actions" aria-label="Azioni principali">
+          <button id="read-selection-button" type="button">Leggi selezione</button>
+        </section>
+
+        <section class="taskpane__output" aria-live="polite">
+          <div class="taskpane__section-header">
+            <h2>Testo selezionato</h2>
+            <button id="clear-selection-button" class="taskpane__mini-button" type="button" disabled>
+              Cancella selezione
+            </button>
+          </div>
+          <p id="status-message" class="taskpane__status">
+            Premi il pulsante per leggere la selezione corrente in Word.
+          </p>
+          <pre id="selection-output" class="taskpane__selection" hidden></pre>
+        </section>
+
+        <section class="taskpane__panel">
+          <label class="taskpane__label" for="writing-profile">Profilo di scrittura</label>
+          <select id="writing-profile" class="taskpane__select">
+            <option value="neutro">Neutro</option>
+            <option value="didattico">Didattico</option>
+            <option value="formale">Formale</option>
+            <option value="tecnico">Tecnico</option>
+            <option value="accademico">Accademico</option>
+            <option value="sintetico">Sintetico</option>
+            <option value="narrativo">Narrativo</option>
+          </select>
+          <label class="taskpane__label" for="ollama-model">Modello Ollama</label>
+          <select id="ollama-model" class="taskpane__select">
+            <option value="">Nessun modello disponibile</option>
+          </select>
+          <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
+          <textarea
+            id="user-prompt"
+            class="taskpane__textarea"
+            rows="5"
+            placeholder="Per esempio: riscrivi il testo in modo più chiaro e professionale."
+          ></textarea>
+          <p class="taskpane__hint">
+            Il testo viene inviato solo al local-bridge locale su <code>http://localhost:3210</code>.
+          </p>
+          <button id="generate-preview-button" type="button">Genera anteprima</button>
+        </section>
+
+        <section class="taskpane__output" aria-live="polite">
+          <h2>Anteprima risultato</h2>
+          <p id="preview-status-message" class="taskpane__status">
+            Inserisci una richiesta, poi genera un'anteprima locale senza modificare il documento.
+          </p>
+          <pre id="preview-output" class="taskpane__selection" hidden></pre>
+          <button id="copy-preview-button" class="taskpane__secondary-button" type="button" disabled>
+            Copia anteprima
+          </button>
+        </section>
+      </div>
+
+      <section id="settings-view" class="taskpane__view taskpane-view is-hidden" hidden aria-hidden="true">
+        <div class="taskpane__output">
+          <div class="taskpane__section-header">
+            <h2>Impostazioni</h2>
+            <button id="close-settings-button" class="taskpane__mini-button" type="button">← Torna</button>
+          </div>
+          <p class="taskpane__status">
+            Personalizza il task pane e salva localmente le preferenze principali del progetto.
+          </p>
+        </div>
+
+        <section class="taskpane__panel">
+          <label class="taskpane__label" for="theme-select">Tema</label>
+          <select id="theme-select" class="taskpane__select">
+            <option value="system">Sistema</option>
+            <option value="dark">Scuro</option>
+            <option value="light">Chiaro</option>
+          </select>
+          <p class="taskpane__hint">
+            LocalOfficeAI salva in locale il tema scelto e ricorda anche profilo di scrittura e modello Ollama selezionati.
+          </p>
+        </section>
+      </section>
+
+      <section id="info-view" class="taskpane__view taskpane-view is-hidden" hidden aria-hidden="true">
+        <div class="taskpane__output">
+          <div class="taskpane__section-header">
+            <h2>Informazioni</h2>
+            <button id="close-info-button" class="taskpane__mini-button" type="button">← Torna</button>
+          </div>
+          <div class="taskpane__info-list">
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Progetto</span>
+              <p>LocalOfficeAI</p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Versione</span>
+              <p>v0.8.0</p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Descrizione</span>
+              <p>
+                Add-in locale per Microsoft Word pensato per usare modelli LLM locali tramite Ollama, senza inviare il
+                testo dei documenti a servizi cloud.
+              </p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Ultimi aggiornamenti</span>
+              <ul class="taskpane__info-updates">
+                <li>v0.8.0: impostazioni locali, tema chiaro/scuro, preferenze salvate, vista informazioni.</li>
+                <li>v0.7.0: stato local-bridge/Ollama e selezione modello.</li>
+                <li>v0.6.0: profili di scrittura e prompt template.</li>
+                <li>v0.5.0: copia dell’anteprima negli appunti.</li>
+              </ul>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Ideatore</span>
+              <p>Prof. Stefano Oliva</p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Licenza</span>
+              <p>AGPL-3.0</p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Privacy</span>
+              <p>
+                LocalOfficeAI lavora in locale. Il testo viene inviato solo al local-bridge configurato su
+                <code>localhost</code> e non a servizi cloud.
+              </p>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Componenti principali</span>
+              <ul class="taskpane__info-updates">
+                <li>Microsoft Office Add-ins / Office.js</li>
+                <li>TypeScript</li>
+                <li>Node.js</li>
+                <li>Ollama</li>
+                <li>modelli LLM locali installati dall’utente</li>
+              </ul>
+            </div>
+            <div class="taskpane__info-item">
+              <span class="taskpane__info-label">Limiti</span>
+              <p>La qualità dell’output dipende dal modello locale scelto e dalle risorse hardware disponibili.</p>
+            </div>
           </div>
         </div>
-        <p id="model-status-message" class="taskpane__status">Premi Aggiorna stato per verificare il bridge locale e Ollama.</p>
-      </section>
-
-      <section class="taskpane__actions" aria-label="Azioni principali">
-        <button id="read-selection-button" type="button">Leggi selezione</button>
-      </section>
-
-      <section class="taskpane__output" aria-live="polite">
-        <h2>Testo selezionato</h2>
-        <p id="status-message" class="taskpane__status">
-          Premi il pulsante per leggere la selezione corrente in Word.
-        </p>
-        <pre id="selection-output" class="taskpane__selection" hidden></pre>
-      </section>
-
-      <section class="taskpane__panel">
-        <label class="taskpane__label" for="writing-profile">Profilo di scrittura</label>
-        <select id="writing-profile" class="taskpane__select">
-          <option value="neutro">Neutro</option>
-          <option value="didattico">Didattico</option>
-          <option value="formale">Formale</option>
-          <option value="tecnico">Tecnico</option>
-          <option value="accademico">Accademico</option>
-          <option value="sintetico">Sintetico</option>
-          <option value="narrativo">Narrativo</option>
-        </select>
-        <label class="taskpane__label" for="ollama-model">Modello Ollama</label>
-        <select id="ollama-model" class="taskpane__select">
-          <option value="">Nessun modello disponibile</option>
-        </select>
-        <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
-        <textarea
-          id="user-prompt"
-          class="taskpane__textarea"
-          rows="5"
-          placeholder="Per esempio: riscrivi il testo in modo più chiaro e professionale."
-        ></textarea>
-        <p class="taskpane__hint">
-          Il testo viene inviato solo al local-bridge locale su <code>http://localhost:3210</code>.
-        </p>
-        <button id="generate-preview-button" type="button">Genera anteprima</button>
-      </section>
-
-      <section class="taskpane__output" aria-live="polite">
-        <h2>Anteprima risultato</h2>
-        <p id="preview-status-message" class="taskpane__status">
-          Inserisci una richiesta, poi genera un'anteprima locale senza modificare il documento.
-        </p>
-        <pre id="preview-output" class="taskpane__selection" hidden></pre>
-        <button id="copy-preview-button" class="taskpane__secondary-button" type="button" disabled>
-          Copia anteprima
-        </button>
       </section>
     </main>
   </body>

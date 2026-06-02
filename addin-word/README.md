@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.7.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, stato locale del bridge/Ollama, scelta del modello e copia negli appunti per l'inserimento manuale nel documento.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.8.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni e copia negli appunti per l'inserimento manuale nel documento.
 
 ## Contenuto
 
@@ -8,10 +8,13 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.7.0`,
 - pulsante `Leggi selezione`;
 - lettura del testo selezionato nel documento Word;
 - visualizzazione del testo selezionato nel pannello;
+- pulsante `Cancella selezione` per rimuovere solo il testo memorizzato nel pannello;
 - sezione `Stato locale` con verifica di local-bridge e Ollama;
 - pulsante `Aggiorna stato`;
 - selezione del `Profilo di scrittura`;
 - selezione del `Modello Ollama`;
+- pulsante `⚙️` per aprire la vista `Impostazioni`;
+- pulsante `❓` per aprire la vista `Informazioni`;
 - area prompt per una richiesta personalizzata;
 - pulsante `Genera anteprima`;
 - anteprima generata localmente tramite `http://localhost:3210/ollama/generate`;
@@ -30,6 +33,12 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.7.0`,
 - `Accademico`: privilegia rigore, coesione e struttura argomentativa.
 - `Sintetico`: riduce ridondanze e conserva solo le informazioni essenziali.
 - `Narrativo`: rende il testo piu' fluido, naturale e coinvolgente.
+
+## Impostazioni e informazioni
+
+- `⚙️ Impostazioni`: apre una vista interna al task pane per scegliere il tema (`Sistema`, `Scuro`, `Chiaro`) e usare preferenze locali salvate.
+- `❓ Informazioni`: apre una vista interna al task pane con credits, versione corrente, privacy, componenti principali e riepilogo degli ultimi aggiornamenti.
+- Le preferenze vengono salvate in locale nel browser/WebView del task pane e comprendono tema, profilo di scrittura e ultimo modello Ollama selezionato quando disponibile.
 
 ## Installazione dipendenze
 
@@ -63,7 +72,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.7.0
+## Prerequisiti per provare la v0.8.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -103,17 +112,26 @@ Procedura generale consigliata per test locali:
 9. apri il task pane di `LocalOfficeAI` dalla ribbon;
 10. premi `Aggiorna stato` e verifica che `Local-bridge` e `Ollama` risultino attivi;
 11. controlla che il menu `Modello Ollama` venga popolato;
-12. seleziona testo nel documento e premi `Leggi selezione`;
-13. scegli un `Profilo di scrittura`;
-14. scegli un `Modello Ollama`, se disponibile;
-15. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
-16. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
-17. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
-18. premi `Copia anteprima`;
-19. verifica il messaggio di conferma della copia;
-20. incolla manualmente il testo nel documento Word nel punto desiderato.
+12. se vuoi, apri `⚙️` e scegli il tema preferito;
+13. se vuoi, apri `❓` per consultare credits e informazioni del progetto;
+14. seleziona testo nel documento e premi `Leggi selezione`;
+15. scegli un `Profilo di scrittura`;
+16. scegli un `Modello Ollama`, se disponibile;
+17. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
+18. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
+19. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
+20. premi `Copia anteprima`;
+21. verifica il messaggio di conferma della copia;
+22. incolla manualmente il testo nel documento Word nel punto desiderato.
 
-La v0.7.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+La v0.8.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+
+LocalOfficeAI puo' lavorare in due modalita':
+
+1. su testo selezionato, leggendo il contenuto da Word e combinandolo con profilo, modello e richiesta utente;
+2. come richiesta libera senza testo selezionato, usando comunque profilo, modello e impostazioni correnti.
+
+`Cancella selezione` rimuove solo il testo memorizzato nel pannello e non modifica in alcun modo il documento Word.
 
 Se `local-bridge` non e' raggiungibile oppure Ollama non e' attivo, il task pane mostra uno stato chiaro e blocca la generazione dell'anteprima finche' il problema non viene risolto.
 
@@ -137,6 +155,7 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - il task pane interroga `GET /health`, `GET /ollama/health` e `GET /ollama/models` per mostrare lo stato locale;
 - il profilo di scrittura viene tradotto in istruzioni di prompt lato task pane prima della chiamata al bridge;
 - il modello selezionato viene inviato a `POST /ollama/generate` quando disponibile;
+- tema, profilo e modello selezionato vengono salvati come preferenze locali del task pane;
 - la copia negli appunti avviene solo dopo clic esplicito su `Copia anteprima`;
 - l'utente incolla manualmente il risultato nel documento Word;
 - la sostituzione della selezione non e' ancora implementata;
