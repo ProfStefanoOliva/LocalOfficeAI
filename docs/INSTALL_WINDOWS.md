@@ -2,6 +2,12 @@
 
 Questa release introduce una prima base di distribuzione della tray app e una procedura guidata piu' chiara per Word su Windows.
 
+## Nota sui marchi
+
+Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microsoft Corporation. LocalOfficeAI e' un progetto indipendente e non e' affiliato, sponsorizzato o approvato da Microsoft.
+
+Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
+
 ## Cosa include v0.15.0
 
 - tray app Electron per LocalOfficeAI;

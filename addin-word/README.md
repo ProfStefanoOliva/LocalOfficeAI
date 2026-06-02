@@ -2,6 +2,12 @@
 
 Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.14.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, endpoint AI locale configurabile, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
 
+## Nota sui marchi
+
+Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microsoft Corporation. LocalOfficeAI e' un progetto indipendente e non e' affiliato, sponsorizzato o approvato da Microsoft.
+
+Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
+
 ## Contenuto
 
 - task pane laterale con titolo `LocalOfficeAI`;

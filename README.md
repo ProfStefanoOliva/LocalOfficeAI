@@ -1,8 +1,14 @@
 ﻿# LocalOfficeAI
 
-LocalOfficeAI è un progetto open source per la creazione di un add-in locale per Microsoft Office, inizialmente per Word, capace di usare modelli LLM locali tramite Ollama.
+LocalOfficeAI è un progetto open source indipendente pensato per affiancare il lavoro su documenti Word tramite un add-in locale, usando modelli LLM locali tramite Ollama.
 
 Il progetto è pensato per funzionare in locale, senza inviare il contenuto dei documenti a servizi cloud.
+
+## Nota sui marchi
+
+Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microsoft Corporation. LocalOfficeAI è un progetto indipendente e non è affiliato, sponsorizzato o approvato da Microsoft.
+
+Il riferimento a Word è usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
 Nella release `v0.15.0` LocalOfficeAI aggiunge una prima fondazione di packaging portable della tray app e una guida piu' chiara per il sideload di Word su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
 

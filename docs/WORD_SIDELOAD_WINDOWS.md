@@ -2,6 +2,12 @@
 
 Questa guida spiega come caricare LocalOfficeAI in Word tramite catalogo di cartella condivisa. E' una soluzione di sideload/test per Windows, non una distribuzione enterprise finale.
 
+## Nota sui marchi
+
+Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microsoft Corporation. LocalOfficeAI e' un progetto indipendente e non e' affiliato, sponsorizzato o approvato da Microsoft.
+
+Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
+
 ## 1. Prepara la cartella catalogo
 
 Metodo consigliato:
