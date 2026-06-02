@@ -1,0 +1,19 @@
+{
+  "name": "localofficeai-desktop-tray",
+  "version": "0.12.0",
+  "private": true,
+  "description": "Tray app Electron minimale per l'avvio locale di LocalOfficeAI su Windows.",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "clean": "node ./scripts/clean.mjs",
+    "start": "electron ./dist/main.js",
+    "start:self-check": "node ./scripts/self-check.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "electron": "^37.0.0",
+    "typescript": "^5.8.3"
+  }
+}

@@ -9,3 +9,5 @@ coverage/
 Thumbs.db
 .vscode/
 .idea/
+
+desktop-tray/tmp-runtime-logs/
