@@ -11,7 +11,7 @@
   <body>
     <main class="taskpane">
       <header class="taskpane__header">
-        <p class="taskpane__eyebrow">Word Add-in v0.5.0</p>
+        <p class="taskpane__eyebrow">Word Add-in v0.6.0</p>
         <h1>LocalOfficeAI</h1>
         <p class="taskpane__description">
           Legge soltanto il testo selezionato nel documento e lo mostra qui nel pannello.
@@ -31,6 +31,16 @@
       </section>
 
       <section class="taskpane__panel">
+        <label class="taskpane__label" for="writing-profile">Profilo di scrittura</label>
+        <select id="writing-profile" class="taskpane__select">
+          <option value="neutro">Neutro</option>
+          <option value="didattico">Didattico</option>
+          <option value="formale">Formale</option>
+          <option value="tecnico">Tecnico</option>
+          <option value="accademico">Accademico</option>
+          <option value="sintetico">Sintetico</option>
+          <option value="narrativo">Narrativo</option>
+        </select>
         <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
         <textarea
           id="user-prompt"

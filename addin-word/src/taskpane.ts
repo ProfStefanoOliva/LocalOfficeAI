@@ -11,10 +11,96 @@ function getRequiredElement<T extends HTMLElement>(
   return element;
 }
 
+type WritingProfileId =
+  | "neutro"
+  | "didattico"
+  | "formale"
+  | "tecnico"
+  | "accademico"
+  | "sintetico"
+  | "narrativo";
+
+type WritingProfile = {
+  label: string;
+  instructions: string[];
+};
+
 const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
+const writingProfiles: Record<WritingProfileId, WritingProfile> = {
+  neutro: {
+    label: "Neutro",
+    instructions: [
+      "Rispondi alla richiesta dell'utente lavorando sul testo fornito.",
+      "Mantieni il significato originale.",
+      "Non aggiungere informazioni non presenti, salvo richiesta esplicita.",
+      "Restituisci solo il testo finale, senza spiegazioni introduttive."
+    ]
+  },
+  didattico: {
+    label: "Didattico",
+    instructions: [
+      "Rendi il testo chiaro, ordinato e comprensibile a studenti.",
+      "Usa un tono da docente.",
+      "Evita frasi troppo lunghe.",
+      "Mantieni accuratezza e semplicita'.",
+      "Restituisci solo il testo finale."
+    ]
+  },
+  formale: {
+    label: "Formale",
+    instructions: [
+      "Usa un tono professionale e istituzionale.",
+      "Migliora precisione, fluidita' e registro.",
+      "Evita espressioni colloquiali.",
+      "Mantieni il contenuto originale.",
+      "Restituisci solo il testo finale."
+    ]
+  },
+  tecnico: {
+    label: "Tecnico",
+    instructions: [
+      "Usa un tono tecnico, preciso e asciutto.",
+      "Mantieni termini specialistici.",
+      "Riduci ambiguita'.",
+      "Non semplificare eccessivamente se il testo e' destinato a utenti tecnici.",
+      "Restituisci solo il testo finale."
+    ]
+  },
+  accademico: {
+    label: "Accademico",
+    instructions: [
+      "Usa un registro accademico.",
+      "Migliora coesione, rigore e struttura argomentativa.",
+      "Evita affermazioni non supportate dal testo.",
+      "Non inventare fonti, dati o riferimenti.",
+      "Restituisci solo il testo finale."
+    ]
+  },
+  sintetico: {
+    label: "Sintetico",
+    instructions: [
+      "Riduci il testo mantenendo le informazioni essenziali.",
+      "Elimina ridondanze.",
+      "Mantieni chiarezza e significato.",
+      "Non aggiungere nuovi contenuti.",
+      "Restituisci solo il testo finale."
+    ]
+  },
+  narrativo: {
+    label: "Narrativo",
+    instructions: [
+      "Migliora ritmo, fluidita' e resa espressiva.",
+      "Mantieni il significato originale.",
+      "Non trasformare il testo in modo eccessivo salvo richiesta esplicita.",
+      "Usa uno stile piu' naturale e coinvolgente.",
+      "Restituisci solo il testo finale."
+    ]
+  }
+};
 const statusMessage = getRequiredElement("status-message", HTMLParagraphElement);
 const selectionOutput = getRequiredElement("selection-output", HTMLPreElement);
 const readSelectionButton = getRequiredElement("read-selection-button", HTMLButtonElement);
+const writingProfileSelect = getRequiredElement("writing-profile", HTMLSelectElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
@@ -62,6 +148,41 @@ function showPreviewResult(text: string): void {
 
 function updateCopyPreviewButtonState(): void {
   copyPreviewButton.disabled = cachedPreviewText.trim().length === 0;
+}
+
+function getSelectedWritingProfileId(): WritingProfileId {
+  const selectedValue = writingProfileSelect.value as WritingProfileId;
+
+  if (selectedValue in writingProfiles) {
+    return selectedValue;
+  }
+
+  return "neutro";
+}
+
+function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedText: string): string {
+  const profile = writingProfiles[profileId];
+  const profileInstructions = profile.instructions.map((instruction) => `- ${instruction}`).join("\n");
+
+  // Keep prompt construction outside the UI handler so profile rules stay explicit,
+  // readable, and easy to inspect during development and review.
+  return [
+    "Ruolo:",
+    "Sei LocalOfficeAI e devi riscrivere o trasformare il testo fornito seguendo il profilo di scrittura selezionato.",
+    "",
+    `Profilo di scrittura: ${profile.label}`,
+    "Istruzioni del profilo:",
+    profileInstructions,
+    "",
+    "Richiesta dell'utente:",
+    userPrompt,
+    "",
+    "Testo di partenza:",
+    selectedText,
+    "",
+    "Output richiesto:",
+    "Restituisci solo il testo finale richiesto, senza titoli, note o spiegazioni aggiuntive."
+  ].join("\n");
 }
 
 async function readCurrentSelectionText(): Promise<string> {
@@ -168,6 +289,7 @@ function getUserFacingBridgeError(message: string): string {
 
 async function generatePreview(): Promise<void> {
   const userPrompt = userPromptInput.value.trim();
+  const selectedProfileId = getSelectedWritingProfileId();
 
   if (cachedSelectionText.trim().length === 0) {
     showPreviewMessage("Seleziona un testo nel documento e premi Leggi selezione.");
@@ -181,13 +303,7 @@ async function generatePreview(): Promise<void> {
 
   showPreviewMessage("Preparazione dell'anteprima locale in corso...");
 
-  const bridgePrompt = [
-    "Istruzione dell'utente:",
-    userPrompt,
-    "",
-    "Testo selezionato:",
-    cachedSelectionText
-  ].join("\n");
+  const bridgePrompt = buildPrompt(selectedProfileId, userPrompt, cachedSelectionText);
 
   try {
     const response = await fetch(bridgeGenerateUrl, {
