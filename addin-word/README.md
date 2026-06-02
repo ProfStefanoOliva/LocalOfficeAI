@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.10.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.13.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
 
 ## Contenuto
 
@@ -9,10 +9,8 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.10.0`
 - lettura del testo selezionato nel documento Word;
 - visualizzazione del testo selezionato nel pannello;
 - pulsante `Cancella selezione` per rimuovere solo il testo memorizzato nel pannello;
-- sezione `Stato locale` con verifica di local-bridge e Ollama;
-- pulsante `Aggiorna stato`;
 - selezione del `Profilo di scrittura`;
-- selezione del `Modello Ollama`;
+- riepilogo compatto di `Provider AI` e modello corrente nella vista principale;
 - sezione `Prompt rapidi` con richieste precompilate modificabili dall'utente;
 - pulsante `⚙️` per aprire la vista `Impostazioni`;
 - pulsante `❓` per aprire la vista `Informazioni`;
@@ -49,9 +47,31 @@ I prompt rapidi compilano il campo della richiesta con un testo iniziale coerent
 
 ## Impostazioni e informazioni
 
-- `⚙️ Impostazioni`: apre una vista interna al task pane per scegliere il tema (`Sistema`, `Scuro`, `Chiaro`) e usare preferenze locali salvate.
+- `⚙️ Impostazioni`: apre una vista interna al task pane che contiene:
+  - `Stato locale` di `local-bridge` e `Ollama`;
+  - pulsante `Aggiorna stato`;
+  - selezione del `Motore AI / Provider AI`;
+  - selezione del `Modello Ollama`;
+  - selezione del `Profilo predefinito`;
+  - scelta del tema (`Sistema`, `Scuro`, `Chiaro`);
+  - note privacy essenziali.
 - `❓ Informazioni`: apre una vista interna al task pane con credits, versione corrente, privacy, componenti principali e riepilogo degli ultimi aggiornamenti.
-- Le preferenze vengono salvate in locale nel browser/WebView del task pane e comprendono tema, profilo di scrittura e ultimo modello Ollama selezionato quando disponibile.
+- Le preferenze vengono salvate in locale nel browser/WebView del task pane e comprendono tema, provider AI, profilo di scrittura e ultimo modello Ollama selezionato quando disponibile.
+
+## Provider AI
+
+La release `v0.13.0` introduce una prima base prudente per provider multipli:
+
+- `Ollama locale`: unico provider attivo e realmente operativo;
+- `OpenAI-compatible`: placeholder futuro, disabilitato;
+- `Claude`: placeholder futuro, disabilitato;
+- `DeepSeek e compatibili`: placeholder futuro, disabilitato.
+
+In questa release:
+
+- non vengono introdotte chiamate cloud;
+- non vengono richieste o salvate API key;
+- il testo continua a essere inviato solo al bridge locale e a Ollama su `localhost`.
 
 ## Installazione dipendenze
 
@@ -102,7 +122,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.10.0
+## Prerequisiti per provare la v0.13.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -140,9 +160,9 @@ Procedura generale consigliata per test locali:
 7. vai in `Inserisci` > `Componenti aggiuntivi` > `I miei componenti aggiuntivi` > `Carica componente aggiuntivo personale`;
 8. seleziona il file `addin-word/manifest.xml`;
 9. apri il task pane di `LocalOfficeAI` dalla ribbon;
-10. premi `Aggiorna stato` e verifica che `Local-bridge` e `Ollama` risultino attivi;
-11. controlla che il menu `Modello Ollama` venga popolato;
-12. se vuoi, apri `⚙️` e scegli il tema preferito;
+10. apri `⚙️`, premi `Aggiorna stato` e verifica che `Local-bridge` e `Ollama` risultino attivi;
+11. nella vista `Impostazioni`, controlla che `Motore AI` resti su `Ollama locale` e che il menu `Modello Ollama` venga popolato;
+12. se vuoi, nella stessa vista scegli anche tema e profilo predefinito;
 13. se vuoi, apri `❓` per consultare credits e informazioni del progetto;
 14. seleziona testo nel documento e premi `Leggi selezione`;
 15. scegli un `Profilo di scrittura`;
@@ -185,10 +205,11 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - il server locale serve solo file statici da `dist/` e non include hot reload;
 - l'add-in invia il testo solo al `local-bridge` locale su `http://localhost:3210`;
 - l'anteprima usa Ollama solo tramite il bridge locale;
-- il task pane interroga `GET /health`, `GET /ollama/health` e `GET /ollama/models` per mostrare lo stato locale;
+- il task pane interroga `GET /health`, `GET /ollama/health` e `GET /ollama/models` dalla vista `Impostazioni` per mostrare lo stato locale;
 - il profilo di scrittura viene tradotto in istruzioni di prompt lato task pane prima della chiamata al bridge;
 - il modello selezionato viene inviato a `POST /ollama/generate` quando disponibile;
-- tema, profilo e modello selezionato vengono salvati come preferenze locali del task pane;
+- tema, provider, profilo e modello selezionato vengono salvati come preferenze locali del task pane;
+- i provider cloud futuri sono mostrati solo come placeholder disabilitati;
 - la copia negli appunti avviene solo dopo clic esplicito su `Copia anteprima`;
 - l'utente incolla manualmente il risultato nel documento Word;
 - la sostituzione della selezione non e' ancora implementata;

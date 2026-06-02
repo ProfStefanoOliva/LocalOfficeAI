@@ -14,6 +14,7 @@ export type WritingProfile = {
 
 export type ThemePreference = "system" | "dark" | "light";
 export type TaskpaneViewName = "main" | "settings" | "info";
+export type AIProviderId = "ollama-local" | "openai-compatible" | "claude" | "deepseek-compatible";
 export type QuickPromptId =
   | "riscrivi"
   | "sintetizza"
@@ -33,16 +34,58 @@ export type StoredPreferences = {
   theme?: unknown;
   writingProfile?: unknown;
   ollamaModel?: unknown;
+  aiProvider?: unknown;
 };
 
 export type NormalizedStoredPreferences = {
   theme: ThemePreference;
   writingProfile: WritingProfileId;
   ollamaModel: string;
+  aiProvider: AIProviderId;
+};
+
+export type AIProviderDefinition = {
+  id: AIProviderId;
+  label: string;
+  availability: "active" | "future";
+  transport: "local" | "cloud";
+  description: string;
 };
 
 export const defaultThemePreference: ThemePreference = "system";
 export const defaultWritingProfileId: WritingProfileId = "neutro";
+export const defaultAIProviderId: AIProviderId = "ollama-local";
+
+export const aiProviderDefinitions: AIProviderDefinition[] = [
+  {
+    id: "ollama-local",
+    label: "Ollama locale",
+    availability: "active",
+    transport: "local",
+    description: "Provider locale attivo nella v0.13.0 tramite local-bridge e Ollama su localhost."
+  },
+  {
+    id: "openai-compatible",
+    label: "OpenAI-compatible",
+    availability: "future",
+    transport: "cloud",
+    description: "Provider futuro non ancora disponibile in questa release."
+  },
+  {
+    id: "claude",
+    label: "Claude",
+    availability: "future",
+    transport: "cloud",
+    description: "Provider futuro non ancora disponibile in questa release."
+  },
+  {
+    id: "deepseek-compatible",
+    label: "DeepSeek e compatibili",
+    availability: "future",
+    transport: "cloud",
+    description: "Provider futuro non ancora disponibile in questa release."
+  }
+];
 
 export const quickPromptTemplates: QuickPromptTemplate[] = [
   {
@@ -168,12 +211,22 @@ export function normalizeStoredPreferences(
       : defaultWritingProfileId;
 
   const ollamaModel = typeof preferences?.ollamaModel === "string" ? preferences.ollamaModel.trim() : "";
+  const aiProvider =
+    typeof preferences?.aiProvider === "string" &&
+    aiProviderDefinitions.some((provider) => provider.id === preferences.aiProvider)
+      ? (preferences.aiProvider as AIProviderId)
+      : defaultAIProviderId;
 
   return {
     theme,
     writingProfile,
-    ollamaModel
+    ollamaModel,
+    aiProvider
   };
+}
+
+export function getAIProviderById(providerId: AIProviderId): AIProviderDefinition {
+  return aiProviderDefinitions.find((provider) => provider.id === providerId) ?? aiProviderDefinitions[0];
 }
 
 export function chooseOllamaModel(
