@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.8.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni e copia negli appunti per l'inserimento manuale nel documento.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.9.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni e copia negli appunti per l'inserimento manuale nel documento.
 
 ## Contenuto
 
@@ -13,6 +13,7 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.8.0`,
 - pulsante `Aggiorna stato`;
 - selezione del `Profilo di scrittura`;
 - selezione del `Modello Ollama`;
+- sezione `Prompt rapidi` con richieste precompilate modificabili dall'utente;
 - pulsante `⚙️` per aprire la vista `Impostazioni`;
 - pulsante `❓` per aprire la vista `Informazioni`;
 - area prompt per una richiesta personalizzata;
@@ -33,6 +34,18 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.8.0`,
 - `Accademico`: privilegia rigore, coesione e struttura argomentativa.
 - `Sintetico`: riduce ridondanze e conserva solo le informazioni essenziali.
 - `Narrativo`: rende il testo piu' fluido, naturale e coinvolgente.
+
+## Prompt rapidi
+
+- `Riscrivi`
+- `Sintetizza`
+- `Espandi`
+- `Correggi`
+- `Spiega`
+- `Rendi piu' formale`
+- `Rendi piu' didattico`
+
+I prompt rapidi compilano il campo della richiesta con un testo iniziale coerente con l'azione scelta. Il testo resta sempre modificabile manualmente prima di premere `Genera anteprima`.
 
 ## Impostazioni e informazioni
 
@@ -72,7 +85,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.8.0
+## Prerequisiti per provare la v0.9.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -118,18 +131,21 @@ Procedura generale consigliata per test locali:
 15. scegli un `Profilo di scrittura`;
 16. scegli un `Modello Ollama`, se disponibile;
 17. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
-18. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
-19. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
-20. premi `Copia anteprima`;
-21. verifica il messaggio di conferma della copia;
-22. incolla manualmente il testo nel documento Word nel punto desiderato.
+18. se vuoi, usa un pulsante della sezione `Prompt rapidi` per precompilare la richiesta e poi rifiniscila manualmente;
+19. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
+20. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
+21. premi `Copia anteprima`;
+22. verifica il messaggio di conferma della copia;
+23. incolla manualmente il testo nel documento Word nel punto desiderato.
 
-La v0.8.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+La v0.9.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
 
 LocalOfficeAI puo' lavorare in due modalita':
 
 1. su testo selezionato, leggendo il contenuto da Word e combinandolo con profilo, modello e richiesta utente;
 2. come richiesta libera senza testo selezionato, usando comunque profilo, modello e impostazioni correnti.
+
+I prompt rapidi funzionano in entrambe le modalita': sia con testo selezionato sia come richiesta libera senza testo selezionato.
 
 `Cancella selezione` rimuove solo il testo memorizzato nel pannello e non modifica in alcun modo il documento Word.
 

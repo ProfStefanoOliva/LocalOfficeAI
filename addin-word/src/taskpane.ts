@@ -27,12 +27,63 @@ type WritingProfile = {
 
 type ThemePreference = "system" | "dark" | "light";
 type TaskpaneViewName = "main" | "settings" | "info";
+type QuickPromptId =
+  | "riscrivi"
+  | "sintetizza"
+  | "espandi"
+  | "correggi"
+  | "spiega"
+  | "piu-formale"
+  | "piu-didattico";
+
+type QuickPromptTemplate = {
+  id: QuickPromptId;
+  label: string;
+  promptText: string;
+};
 
 const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
 const bridgeHealthUrl = "http://localhost:3210/health";
 const ollamaHealthUrl = "http://localhost:3210/ollama/health";
 const ollamaModelsUrl = "http://localhost:3210/ollama/models";
 const preferencesStorageKey = "localofficeai.taskpane.preferences";
+const quickPromptTemplates: QuickPromptTemplate[] = [
+  {
+    id: "riscrivi",
+    label: "Riscrivi",
+    promptText: "Riscrivi il contenuto in modo più chiaro, mantenendo il significato originale."
+  },
+  {
+    id: "sintetizza",
+    label: "Sintetizza",
+    promptText: "Sintetizza il contenuto mantenendo solo le informazioni essenziali."
+  },
+  {
+    id: "espandi",
+    label: "Espandi",
+    promptText: "Espandi il contenuto aggiungendo dettagli utili senza alterare il significato originale."
+  },
+  {
+    id: "correggi",
+    label: "Correggi",
+    promptText: "Correggi grammatica, ortografia e punteggiatura, mantenendo il significato originale."
+  },
+  {
+    id: "spiega",
+    label: "Spiega",
+    promptText: "Spiega il contenuto in modo chiaro e comprensibile."
+  },
+  {
+    id: "piu-formale",
+    label: "Rendi più formale",
+    promptText: "Rendi il contenuto più formale, preciso e professionale."
+  },
+  {
+    id: "piu-didattico",
+    label: "Rendi più didattico",
+    promptText: "Rendi il contenuto più didattico, chiaro e adatto a studenti."
+  }
+];
 const writingProfiles: Record<WritingProfileId, WritingProfile> = {
   neutro: {
     label: "Neutro",
@@ -144,6 +195,7 @@ const writingProfileSelect = getRequiredElement("writing-profile", HTMLSelectEle
 const ollamaModelSelect = getRequiredElement("ollama-model", HTMLSelectElement);
 const themeSelect = getRequiredElement("theme-select", HTMLSelectElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
+const quickPromptButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-quick-prompt]"));
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
 const previewOutput = getRequiredElement("preview-output", HTMLPreElement);
@@ -250,6 +302,20 @@ function applyTheme(theme: ThemePreference): void {
   document.body.dataset.theme = theme;
   themeSelect.value = theme;
   writeStoredPreferences();
+}
+
+function applyQuickPrompt(promptId: QuickPromptId): void {
+  const selectedPrompt = quickPromptTemplates.find((template) => template.id === promptId);
+
+  if (!selectedPrompt) {
+    return;
+  }
+
+  // Quick prompts are editable starting points: we prefill the request field
+  // and leave the final wording under the user's control before generation.
+  userPromptInput.value = selectedPrompt.promptText;
+  userPromptInput.focus();
+  userPromptInput.setSelectionRange(userPromptInput.value.length, userPromptInput.value.length);
 }
 
 function setViewVisibility(view: HTMLElement, isActive: boolean): void {
@@ -718,6 +784,18 @@ Office.onReady((info) => {
   copyPreviewButton.addEventListener("click", () => {
     void copyGeneratedPreview();
   });
+
+  for (const button of quickPromptButtons) {
+    button.addEventListener("click", () => {
+      const promptId = button.dataset.quickPrompt as QuickPromptId | undefined;
+
+      if (!promptId) {
+        return;
+      }
+
+      applyQuickPrompt(promptId);
+    });
+  }
 
   applyStoredPreferences();
   updateModelSelect([]);

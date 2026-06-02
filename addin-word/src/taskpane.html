@@ -13,7 +13,7 @@
       <header class="taskpane__header">
         <div class="taskpane__header-top">
           <div>
-            <p class="taskpane__eyebrow">Word Add-in v0.8.0</p>
+            <p class="taskpane__eyebrow">Word Add-in v0.9.0</p>
             <h1>LocalOfficeAI</h1>
           </div>
           <div class="taskpane__header-actions">
@@ -81,6 +81,21 @@
           <select id="ollama-model" class="taskpane__select">
             <option value="">Nessun modello disponibile</option>
           </select>
+          <div class="taskpane__quick-prompts-section">
+            <span class="taskpane__label">Prompt rapidi</span>
+            <div class="taskpane__quick-prompts" role="group" aria-label="Prompt rapidi">
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="riscrivi">Riscrivi</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="sintetizza">Sintetizza</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="espandi">Espandi</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="correggi">Correggi</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="spiega">Spiega</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="piu-formale">Rendi più formale</button>
+              <button class="taskpane__quick-prompt-button" type="button" data-quick-prompt="piu-didattico">Rendi più didattico</button>
+            </div>
+            <p class="taskpane__hint taskpane__hint--compact">
+              I prompt rapidi compilano la richiesta, ma puoi sempre modificarla prima di generare l'anteprima.
+            </p>
+          </div>
           <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
           <textarea
             id="user-prompt"
@@ -143,7 +158,7 @@
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Versione</span>
-              <p>v0.8.0</p>
+              <p>v0.9.0</p>
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Descrizione</span>
@@ -155,6 +170,7 @@
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Ultimi aggiornamenti</span>
               <ul class="taskpane__info-updates">
+                <li>v0.9.0: prompt rapidi per compilare richieste modificabili dall'utente.</li>
                 <li>v0.8.0: impostazioni locali, tema chiaro/scuro, preferenze salvate, vista informazioni.</li>
                 <li>v0.7.0: stato local-bridge/Ollama e selezione modello.</li>
                 <li>v0.6.0: profili di scrittura e prompt template.</li>
