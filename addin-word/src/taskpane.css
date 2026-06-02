@@ -102,6 +102,45 @@ h1 {
     border-color 140ms ease;
 }
 
+.taskpane__secondary-button {
+  width: 100%;
+  margin-top: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  padding: 0.82rem 1rem;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    opacity 140ms ease;
+}
+
+.taskpane__secondary-button:hover:not(:disabled) {
+  border-color: rgba(96, 165, 250, 0.42);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.24), rgba(15, 23, 42, 0.98));
+  transform: translateY(-1px);
+}
+
+.taskpane__secondary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.taskpane__secondary-button:focus-visible {
+  outline: 3px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.taskpane__secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .taskpane__actions button:hover,
 .taskpane__panel button:hover {
   background: linear-gradient(135deg, var(--accent-hover), var(--accent-primary));
