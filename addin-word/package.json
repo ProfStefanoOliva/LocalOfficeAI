@@ -1,8 +1,8 @@
 {
   "name": "localofficeai-word-addin",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "Base tecnica minimale dell'add-in Word di LocalOfficeAI.",
+  "description": "Add-in Word locale di LocalOfficeAI con anteprima via local-bridge.",
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "clean": "node ./scripts/clean.mjs",

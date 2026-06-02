@@ -24,7 +24,8 @@ body {
 }
 
 .taskpane__header,
-.taskpane__output {
+.taskpane__output,
+.taskpane__panel {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #dbe3f0;
   border-radius: 16px;
@@ -58,6 +59,10 @@ h1 {
 
 .taskpane__actions button {
   width: 100%;
+}
+
+.taskpane__actions button,
+.taskpane__panel button {
   border: 0;
   border-radius: 999px;
   padding: 0.85rem 1rem;
@@ -69,13 +74,42 @@ h1 {
   box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
 }
 
-.taskpane__actions button:hover {
+.taskpane__actions button:hover,
+.taskpane__panel button:hover {
   background: linear-gradient(135deg, #1e40af, #1d4ed8);
 }
 
-.taskpane__actions button:focus-visible {
+.taskpane__actions button:focus-visible,
+.taskpane__panel button:focus-visible,
+.taskpane__textarea:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
+}
+
+.taskpane__label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.taskpane__textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 0.9rem;
+  font: inherit;
+  line-height: 1.45;
+  background: #f8fbff;
+  color: inherit;
+}
+
+.taskpane__hint {
+  margin-top: 0.65rem;
+  margin-bottom: 0.85rem;
+  color: #334155;
+  line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 .taskpane__status {

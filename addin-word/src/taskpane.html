@@ -11,7 +11,7 @@
   <body>
     <main class="taskpane">
       <header class="taskpane__header">
-        <p class="taskpane__eyebrow">Word Add-in v0.1.0</p>
+        <p class="taskpane__eyebrow">Word Add-in v0.4.0</p>
         <h1>LocalOfficeAI</h1>
         <p class="taskpane__description">
           Legge soltanto il testo selezionato nel documento e lo mostra qui nel pannello.
@@ -22,12 +22,34 @@
         <button id="read-selection-button" type="button">Leggi selezione</button>
       </section>
 
+      <section class="taskpane__panel">
+        <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
+        <textarea
+          id="user-prompt"
+          class="taskpane__textarea"
+          rows="5"
+          placeholder="Per esempio: riscrivi il testo in modo più chiaro e professionale."
+        ></textarea>
+        <p class="taskpane__hint">
+          Il testo viene inviato solo al local-bridge locale su <code>http://localhost:3210</code>.
+        </p>
+        <button id="generate-preview-button" type="button">Genera anteprima</button>
+      </section>
+
       <section class="taskpane__output" aria-live="polite">
         <h2>Testo selezionato</h2>
         <p id="status-message" class="taskpane__status">
           Premi il pulsante per leggere la selezione corrente in Word.
         </p>
         <pre id="selection-output" class="taskpane__selection" hidden></pre>
+      </section>
+
+      <section class="taskpane__output" aria-live="polite">
+        <h2>Anteprima risultato</h2>
+        <p id="preview-status-message" class="taskpane__status">
+          Inserisci una richiesta, poi genera un'anteprima locale senza modificare il documento.
+        </p>
+        <pre id="preview-output" class="taskpane__selection" hidden></pre>
       </section>
     </main>
   </body>
