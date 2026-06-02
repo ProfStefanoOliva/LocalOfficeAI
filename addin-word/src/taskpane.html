@@ -11,12 +11,30 @@
   <body>
     <main class="taskpane">
       <header class="taskpane__header">
-        <p class="taskpane__eyebrow">Word Add-in v0.6.0</p>
+        <p class="taskpane__eyebrow">Word Add-in v0.7.0</p>
         <h1>LocalOfficeAI</h1>
         <p class="taskpane__description">
           Legge soltanto il testo selezionato nel documento e lo mostra qui nel pannello.
         </p>
       </header>
+
+      <section class="taskpane__output" aria-live="polite">
+        <div class="taskpane__section-header">
+          <h2>Stato locale</h2>
+          <button id="refresh-status-button" class="taskpane__mini-button" type="button">Aggiorna stato</button>
+        </div>
+        <div class="taskpane__status-grid">
+          <div class="taskpane__status-row">
+            <span class="taskpane__status-label">Local-bridge</span>
+            <span id="bridge-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+          </div>
+          <div class="taskpane__status-row">
+            <span class="taskpane__status-label">Ollama</span>
+            <span id="ollama-status-value" class="taskpane__status-badge" data-state="inactive">Non raggiungibile</span>
+          </div>
+        </div>
+        <p id="model-status-message" class="taskpane__status">Premi Aggiorna stato per verificare il bridge locale e Ollama.</p>
+      </section>
 
       <section class="taskpane__actions" aria-label="Azioni principali">
         <button id="read-selection-button" type="button">Leggi selezione</button>
@@ -40,6 +58,10 @@
           <option value="accademico">Accademico</option>
           <option value="sintetico">Sintetico</option>
           <option value="narrativo">Narrativo</option>
+        </select>
+        <label class="taskpane__label" for="ollama-model">Modello Ollama</label>
+        <select id="ollama-model" class="taskpane__select">
+          <option value="">Nessun modello disponibile</option>
         </select>
         <label class="taskpane__label" for="user-prompt">Richiesta per l'anteprima</label>
         <textarea

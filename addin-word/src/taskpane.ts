@@ -26,6 +26,9 @@ type WritingProfile = {
 };
 
 const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
+const bridgeHealthUrl = "http://localhost:3210/health";
+const ollamaHealthUrl = "http://localhost:3210/ollama/health";
+const ollamaModelsUrl = "http://localhost:3210/ollama/models";
 const writingProfiles: Record<WritingProfileId, WritingProfile> = {
   neutro: {
     label: "Neutro",
@@ -97,10 +100,35 @@ const writingProfiles: Record<WritingProfileId, WritingProfile> = {
     ]
   }
 };
+
+type BridgeHealthResponse = {
+  status?: unknown;
+  service?: unknown;
+  version?: unknown;
+};
+
+type OllamaHealthResponse = {
+  status?: unknown;
+  service?: unknown;
+  baseUrl?: unknown;
+  error?: unknown;
+};
+
+type OllamaModelsResponse = {
+  baseUrl?: unknown;
+  models?: unknown;
+  error?: unknown;
+};
+
 const statusMessage = getRequiredElement("status-message", HTMLParagraphElement);
 const selectionOutput = getRequiredElement("selection-output", HTMLPreElement);
+const bridgeStatusValue = getRequiredElement("bridge-status-value", HTMLSpanElement);
+const ollamaStatusValue = getRequiredElement("ollama-status-value", HTMLSpanElement);
+const modelStatusMessage = getRequiredElement("model-status-message", HTMLParagraphElement);
+const refreshStatusButton = getRequiredElement("refresh-status-button", HTMLButtonElement);
 const readSelectionButton = getRequiredElement("read-selection-button", HTMLButtonElement);
 const writingProfileSelect = getRequiredElement("writing-profile", HTMLSelectElement);
+const ollamaModelSelect = getRequiredElement("ollama-model", HTMLSelectElement);
 const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
@@ -109,6 +137,10 @@ const copyPreviewButton = getRequiredElement("copy-preview-button", HTMLButtonEl
 
 let cachedSelectionText = "";
 let cachedPreviewText = "";
+let isBridgeReachable = false;
+let isOllamaReachable = false;
+let availableOllamaModels: string[] = [];
+let selectedOllamaModel = "";
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
@@ -150,6 +182,59 @@ function updateCopyPreviewButtonState(): void {
   copyPreviewButton.disabled = cachedPreviewText.trim().length === 0;
 }
 
+function setStatusChip(element: HTMLSpanElement, label: string, isActive: boolean): void {
+  element.textContent = label;
+  element.dataset.state = isActive ? "active" : "inactive";
+}
+
+function updateModelSelect(models: string[]): void {
+  const previousSelection = selectedOllamaModel;
+  ollamaModelSelect.innerHTML = "";
+
+  if (models.length === 0) {
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Nessun modello disponibile";
+    ollamaModelSelect.appendChild(placeholderOption);
+    ollamaModelSelect.disabled = true;
+    selectedOllamaModel = "";
+    return;
+  }
+
+  for (const model of models) {
+    const option = document.createElement("option");
+    option.value = model;
+    option.textContent = model;
+    ollamaModelSelect.appendChild(option);
+  }
+
+  ollamaModelSelect.disabled = false;
+  selectedOllamaModel = models.includes(previousSelection) ? previousSelection : models[0];
+  ollamaModelSelect.value = selectedOllamaModel;
+}
+
+function updateLocalStatusUi(): void {
+  setStatusChip(bridgeStatusValue, isBridgeReachable ? "Attivo" : "Non raggiungibile", isBridgeReachable);
+  setStatusChip(ollamaStatusValue, isOllamaReachable ? "Attivo" : "Non raggiungibile", isOllamaReachable);
+
+  if (!isBridgeReachable) {
+    modelStatusMessage.textContent = "Il local-bridge non e' raggiungibile su http://localhost:3210.";
+    return;
+  }
+
+  if (!isOllamaReachable) {
+    modelStatusMessage.textContent = "Ollama non e' raggiungibile tramite il local-bridge.";
+    return;
+  }
+
+  if (availableOllamaModels.length === 0) {
+    modelStatusMessage.textContent = "Ollama e' attivo, ma non risultano modelli disponibili.";
+    return;
+  }
+
+  modelStatusMessage.textContent = `Modelli disponibili: ${availableOllamaModels.length}.`;
+}
+
 function getSelectedWritingProfileId(): WritingProfileId {
   const selectedValue = writingProfileSelect.value as WritingProfileId;
 
@@ -185,6 +270,18 @@ function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedTe
   ].join("\n");
 }
 
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    const suffix = responseText.trim().length > 0 ? ` Dettagli: ${responseText.trim()}` : "";
+    throw new Error(`HTTP ${response.status}.${suffix}`);
+  }
+
+  return (await response.json()) as T;
+}
+
 async function readCurrentSelectionText(): Promise<string> {
   const selectionText = await Word.run(async (context) => {
     const selection = context.document.getSelection();
@@ -201,6 +298,70 @@ async function readCurrentSelectionText(): Promise<string> {
   });
 
   return selectionText;
+}
+
+async function checkBridgeHealth(): Promise<boolean> {
+  await fetchJson<BridgeHealthResponse>(bridgeHealthUrl);
+  return true;
+}
+
+async function checkOllamaHealth(): Promise<boolean> {
+  const data = await fetchJson<OllamaHealthResponse>(ollamaHealthUrl);
+  return data.status === "ok";
+}
+
+async function loadOllamaModels(): Promise<string[]> {
+  const data = await fetchJson<OllamaModelsResponse>(ollamaModelsUrl);
+
+  if (!Array.isArray(data.models)) {
+    return [];
+  }
+
+  return data.models.filter((model): model is string => typeof model === "string" && model.trim().length > 0);
+}
+
+async function refreshLocalStatus(): Promise<void> {
+  refreshStatusButton.disabled = true;
+  bridgeStatusValue.textContent = "Verifica in corso...";
+  ollamaStatusValue.textContent = "Verifica in corso...";
+  modelStatusMessage.textContent = "Aggiornamento stato locale in corso...";
+
+  try {
+    isBridgeReachable = await checkBridgeHealth();
+  } catch (error) {
+    console.warn("Controllo local-bridge non riuscito.", error);
+    isBridgeReachable = false;
+    isOllamaReachable = false;
+    availableOllamaModels = [];
+    updateModelSelect([]);
+    updateLocalStatusUi();
+    refreshStatusButton.disabled = false;
+    return;
+  }
+
+  try {
+    isOllamaReachable = await checkOllamaHealth();
+  } catch (error) {
+    console.warn("Controllo Ollama non riuscito.", error);
+    isOllamaReachable = false;
+    availableOllamaModels = [];
+    updateModelSelect([]);
+    updateLocalStatusUi();
+    refreshStatusButton.disabled = false;
+    return;
+  }
+
+  try {
+    availableOllamaModels = await loadOllamaModels();
+    updateModelSelect(availableOllamaModels);
+  } catch (error) {
+    console.warn("Caricamento modelli Ollama non riuscito.", error);
+    availableOllamaModels = [];
+    updateModelSelect([]);
+  }
+
+  updateLocalStatusUi();
+  refreshStatusButton.disabled = false;
 }
 
 async function copyPreviewWithClipboardApi(previewText: string): Promise<void> {
@@ -301,6 +462,21 @@ async function generatePreview(): Promise<void> {
     return;
   }
 
+  if (!isBridgeReachable) {
+    showPreviewMessage("Il local-bridge non e' raggiungibile. Premi Aggiorna stato e verifica che il servizio sia avviato.");
+    return;
+  }
+
+  if (!isOllamaReachable) {
+    showPreviewMessage("Ollama non e' raggiungibile. Premi Aggiorna stato e verifica che il servizio sia attivo.");
+    return;
+  }
+
+  if (availableOllamaModels.length === 0 && selectedOllamaModel.trim().length === 0) {
+    showPreviewMessage("Nessun modello Ollama disponibile. Premi Aggiorna stato e verifica i modelli installati.");
+    return;
+  }
+
   showPreviewMessage("Preparazione dell'anteprima locale in corso...");
 
   const bridgePrompt = buildPrompt(selectedProfileId, userPrompt, cachedSelectionText);
@@ -312,7 +488,8 @@ async function generatePreview(): Promise<void> {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        prompt: bridgePrompt
+        prompt: bridgePrompt,
+        ...(selectedOllamaModel.trim().length > 0 ? { model: selectedOllamaModel } : {})
       })
     });
 
@@ -359,9 +536,20 @@ Office.onReady((info) => {
     void generatePreview();
   });
 
+  refreshStatusButton.addEventListener("click", () => {
+    void refreshLocalStatus();
+  });
+
+  ollamaModelSelect.addEventListener("change", () => {
+    selectedOllamaModel = ollamaModelSelect.value.trim();
+  });
+
   copyPreviewButton.addEventListener("click", () => {
     void copyGeneratedPreview();
   });
 
+  updateModelSelect([]);
+  updateLocalStatusUi();
   updateCopyPreviewButtonState();
+  void refreshLocalStatus();
 });
