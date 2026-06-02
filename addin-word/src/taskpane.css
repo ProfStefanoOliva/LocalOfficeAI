@@ -155,6 +155,7 @@ h1 {
 
 .taskpane__actions button:focus-visible,
 .taskpane__panel button:focus-visible,
+.taskpane__select:focus-visible,
 .taskpane__textarea:focus-visible {
   outline: 3px solid #60a5fa;
   outline-offset: 2px;
@@ -167,18 +168,63 @@ h1 {
   color: var(--text-primary);
 }
 
+.taskpane__select,
 .taskpane__textarea {
   width: 100%;
-  resize: vertical;
-  min-height: 7.5rem;
   border: 1px solid var(--border-accent);
   border-radius: 12px;
-  padding: 0.9rem;
   font: inherit;
   line-height: 1.45;
   background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
   color: var(--text-primary);
   box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
+}
+
+.taskpane__select {
+  appearance: none;
+  margin-bottom: 0.95rem;
+  padding: 0.85rem 2.75rem 0.85rem 0.9rem;
+  border-color: var(--border-color);
+  background-image:
+    linear-gradient(45deg, transparent 50%, #93c5fd 50%),
+    linear-gradient(135deg, #93c5fd 50%, transparent 50%),
+    linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  background-position:
+    calc(100% - 1.15rem) calc(50% - 0.18rem),
+    calc(100% - 0.8rem) calc(50% - 0.18rem),
+    0 0;
+  background-size:
+    0.4rem 0.4rem,
+    0.4rem 0.4rem,
+    100% 100%;
+  background-repeat: no-repeat;
+  color-scheme: dark;
+}
+
+.taskpane__select:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+}
+
+.taskpane__select:focus {
+  border-color: #3b82f6;
+}
+
+.taskpane__select option {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.taskpane__select option:checked,
+.taskpane__select option:hover,
+.taskpane__select option:focus {
+  color: #0f172a;
+  background: #dbeafe;
+}
+
+.taskpane__textarea {
+  resize: vertical;
+  min-height: 7.5rem;
+  padding: 0.9rem;
 }
 
 .taskpane__textarea::placeholder {

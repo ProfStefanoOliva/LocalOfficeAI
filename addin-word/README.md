@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.5.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama e di copiarla negli appunti per l'inserimento manuale nel documento.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.6.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati e copia negli appunti per l'inserimento manuale nel documento.
 
 ## Contenuto
 
@@ -8,6 +8,7 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.5.0`,
 - pulsante `Leggi selezione`;
 - lettura del testo selezionato nel documento Word;
 - visualizzazione del testo selezionato nel pannello;
+- selezione del `Profilo di scrittura`;
 - area prompt per una richiesta personalizzata;
 - pulsante `Genera anteprima`;
 - anteprima generata localmente tramite `http://localhost:3210/ollama/generate`;
@@ -16,6 +17,16 @@ Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.5.0`,
 - incolla manuale del risultato nel documento nel punto desiderato;
 - nessuna modifica automatica o distruttiva del documento;
 - messaggio chiaro quando non esiste una selezione testuale o manca il prompt.
+
+## Profili di scrittura
+
+- `Neutro`: mantiene un comportamento vicino all'attuale, ma con istruzioni piu' ordinate e controllate.
+- `Didattico`: privilegia chiarezza, ordine e comprensibilita' per studenti.
+- `Formale`: usa un tono professionale e istituzionale.
+- `Tecnico`: mantiene precisione, terminologia specialistica e riduzione delle ambiguita'.
+- `Accademico`: privilegia rigore, coesione e struttura argomentativa.
+- `Sintetico`: riduce ridondanze e conserva solo le informazioni essenziali.
+- `Narrativo`: rende il testo piu' fluido, naturale e coinvolgente.
 
 ## Installazione dipendenze
 
@@ -49,7 +60,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.5.0
+## Prerequisiti per provare la v0.6.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -88,14 +99,15 @@ Procedura generale consigliata per test locali:
 8. seleziona il file `addin-word/manifest.xml`;
 9. apri il task pane di `LocalOfficeAI` dalla ribbon;
 10. seleziona testo nel documento e premi `Leggi selezione`;
-11. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
-12. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
-13. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
-14. premi `Copia anteprima`;
-15. verifica il messaggio di conferma della copia;
-16. incolla manualmente il testo nel documento Word nel punto desiderato.
+11. scegli un `Profilo di scrittura`;
+12. inserisci una richiesta nell'area prompt, per esempio `riassumi il testo in modo chiaro`;
+13. premi `Genera anteprima` e controlla l'area `Anteprima risultato`;
+14. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
+15. premi `Copia anteprima`;
+16. verifica il messaggio di conferma della copia;
+17. incolla manualmente il testo nel documento Word nel punto desiderato.
 
-La v0.5.0 non prova piu' a modificare direttamente il documento Word. Dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+La v0.6.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
 
 La modifica diretta del documento e' rimandata a una fase successiva, perché nei test reali il task pane non ha dato un comportamento di inserimento sufficientemente affidabile.
 
@@ -114,6 +126,7 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - il server locale serve solo file statici da `dist/` e non include hot reload;
 - l'add-in invia il testo solo al `local-bridge` locale su `http://localhost:3210`;
 - l'anteprima usa Ollama solo tramite il bridge locale;
+- il profilo di scrittura viene tradotto in istruzioni di prompt lato task pane prima della chiamata al bridge;
 - la copia negli appunti avviene solo dopo clic esplicito su `Copia anteprima`;
 - l'utente incolla manualmente il risultato nel documento Word;
 - la sostituzione della selezione non e' ancora implementata;
