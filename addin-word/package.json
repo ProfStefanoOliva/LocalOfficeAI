@@ -1,6 +1,6 @@
 {
   "name": "localofficeai-word-addin",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "Add-in Word locale di LocalOfficeAI con anteprima via local-bridge.",
   "scripts": {
@@ -8,6 +8,7 @@
     "clean": "node ./scripts/clean.mjs",
     "dev-cert": "office-addin-dev-certs install",
     "dev-server": "node ./scripts/dev-server.mjs",
+    "test": "node ./scripts/test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

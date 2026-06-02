@@ -1,3 +1,18 @@
+import {
+  buildPrompt,
+  chooseOllamaModel,
+  createViewState,
+  defaultThemePreference,
+  normalizeStoredPreferences,
+  quickPromptTemplates,
+  type QuickPromptId,
+  type StoredPreferences,
+  type TaskpaneViewName,
+  type ThemePreference,
+  type WritingProfileId,
+  writingProfiles
+} from "./taskpane-core.js";
+
 function getRequiredElement<T extends HTMLElement>(
   elementId: string,
   elementType: { new (): T }
@@ -11,150 +26,11 @@ function getRequiredElement<T extends HTMLElement>(
   return element;
 }
 
-type WritingProfileId =
-  | "neutro"
-  | "didattico"
-  | "formale"
-  | "tecnico"
-  | "accademico"
-  | "sintetico"
-  | "narrativo";
-
-type WritingProfile = {
-  label: string;
-  instructions: string[];
-};
-
-type ThemePreference = "system" | "dark" | "light";
-type TaskpaneViewName = "main" | "settings" | "info";
-type QuickPromptId =
-  | "riscrivi"
-  | "sintetizza"
-  | "espandi"
-  | "correggi"
-  | "spiega"
-  | "piu-formale"
-  | "piu-didattico";
-
-type QuickPromptTemplate = {
-  id: QuickPromptId;
-  label: string;
-  promptText: string;
-};
-
 const bridgeGenerateUrl = "http://localhost:3210/ollama/generate";
 const bridgeHealthUrl = "http://localhost:3210/health";
 const ollamaHealthUrl = "http://localhost:3210/ollama/health";
 const ollamaModelsUrl = "http://localhost:3210/ollama/models";
 const preferencesStorageKey = "localofficeai.taskpane.preferences";
-const quickPromptTemplates: QuickPromptTemplate[] = [
-  {
-    id: "riscrivi",
-    label: "Riscrivi",
-    promptText: "Riscrivi il contenuto in modo più chiaro, mantenendo il significato originale."
-  },
-  {
-    id: "sintetizza",
-    label: "Sintetizza",
-    promptText: "Sintetizza il contenuto mantenendo solo le informazioni essenziali."
-  },
-  {
-    id: "espandi",
-    label: "Espandi",
-    promptText: "Espandi il contenuto aggiungendo dettagli utili senza alterare il significato originale."
-  },
-  {
-    id: "correggi",
-    label: "Correggi",
-    promptText: "Correggi grammatica, ortografia e punteggiatura, mantenendo il significato originale."
-  },
-  {
-    id: "spiega",
-    label: "Spiega",
-    promptText: "Spiega il contenuto in modo chiaro e comprensibile."
-  },
-  {
-    id: "piu-formale",
-    label: "Rendi più formale",
-    promptText: "Rendi il contenuto più formale, preciso e professionale."
-  },
-  {
-    id: "piu-didattico",
-    label: "Rendi più didattico",
-    promptText: "Rendi il contenuto più didattico, chiaro e adatto a studenti."
-  }
-];
-const writingProfiles: Record<WritingProfileId, WritingProfile> = {
-  neutro: {
-    label: "Neutro",
-    instructions: [
-      "Rispondi alla richiesta dell'utente lavorando sul testo fornito.",
-      "Mantieni il significato originale.",
-      "Non aggiungere informazioni non presenti, salvo richiesta esplicita.",
-      "Restituisci solo il testo finale, senza spiegazioni introduttive."
-    ]
-  },
-  didattico: {
-    label: "Didattico",
-    instructions: [
-      "Rendi il testo chiaro, ordinato e comprensibile a studenti.",
-      "Usa un tono da docente.",
-      "Evita frasi troppo lunghe.",
-      "Mantieni accuratezza e semplicita'.",
-      "Restituisci solo il testo finale."
-    ]
-  },
-  formale: {
-    label: "Formale",
-    instructions: [
-      "Usa un tono professionale e istituzionale.",
-      "Migliora precisione, fluidita' e registro.",
-      "Evita espressioni colloquiali.",
-      "Mantieni il contenuto originale.",
-      "Restituisci solo il testo finale."
-    ]
-  },
-  tecnico: {
-    label: "Tecnico",
-    instructions: [
-      "Usa un tono tecnico, preciso e asciutto.",
-      "Mantieni termini specialistici.",
-      "Riduci ambiguita'.",
-      "Non semplificare eccessivamente se il testo e' destinato a utenti tecnici.",
-      "Restituisci solo il testo finale."
-    ]
-  },
-  accademico: {
-    label: "Accademico",
-    instructions: [
-      "Usa un registro accademico.",
-      "Migliora coesione, rigore e struttura argomentativa.",
-      "Evita affermazioni non supportate dal testo.",
-      "Non inventare fonti, dati o riferimenti.",
-      "Restituisci solo il testo finale."
-    ]
-  },
-  sintetico: {
-    label: "Sintetico",
-    instructions: [
-      "Riduci il testo mantenendo le informazioni essenziali.",
-      "Elimina ridondanze.",
-      "Mantieni chiarezza e significato.",
-      "Non aggiungere nuovi contenuti.",
-      "Restituisci solo il testo finale."
-    ]
-  },
-  narrativo: {
-    label: "Narrativo",
-    instructions: [
-      "Migliora ritmo, fluidita' e resa espressiva.",
-      "Mantieni il significato originale.",
-      "Non trasformare il testo in modo eccessivo salvo richiesta esplicita.",
-      "Usa uno stile piu' naturale e coinvolgente.",
-      "Restituisci solo il testo finale."
-    ]
-  }
-};
 
 type BridgeHealthResponse = {
   status?: unknown;
@@ -207,13 +83,7 @@ let isBridgeReachable = false;
 let isOllamaReachable = false;
 let availableOllamaModels: string[] = [];
 let selectedOllamaModel = "";
-let selectedTheme: ThemePreference = "system";
-
-type StoredPreferences = {
-  theme?: unknown;
-  writingProfile?: unknown;
-  ollamaModel?: unknown;
-};
+let selectedTheme: ThemePreference = defaultThemePreference;
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
@@ -336,9 +206,11 @@ function resetTaskpaneScroll(): void {
 }
 
 function showView(viewName: TaskpaneViewName): void {
-  setViewVisibility(mainView, viewName === "main");
-  setViewVisibility(settingsView, viewName === "settings");
-  setViewVisibility(infoView, viewName === "info");
+  const viewState = createViewState(viewName);
+
+  setViewVisibility(mainView, viewState.main);
+  setViewVisibility(settingsView, viewState.settings);
+  setViewVisibility(infoView, viewState.info);
   resetTaskpaneScroll();
 }
 
@@ -349,7 +221,7 @@ function setStatusChip(element: HTMLSpanElement, label: string, isActive: boolea
 
 function updateModelSelect(models: string[]): void {
   const previousSelection = selectedOllamaModel;
-  const preferredModel = readStoredPreferences().ollamaModel;
+  const preferredModel = normalizeStoredPreferences(readStoredPreferences()).ollamaModel;
   ollamaModelSelect.innerHTML = "";
 
   if (models.length === 0) {
@@ -370,13 +242,7 @@ function updateModelSelect(models: string[]): void {
   }
 
   ollamaModelSelect.disabled = false;
-  if (typeof preferredModel === "string" && models.includes(preferredModel)) {
-    selectedOllamaModel = preferredModel;
-  } else if (models.includes(previousSelection)) {
-    selectedOllamaModel = previousSelection;
-  } else {
-    selectedOllamaModel = models[0];
-  }
+  selectedOllamaModel = chooseOllamaModel(models, preferredModel, previousSelection);
   ollamaModelSelect.value = selectedOllamaModel;
   writeStoredPreferences();
 }
@@ -414,63 +280,12 @@ function getSelectedWritingProfileId(): WritingProfileId {
 }
 
 function applyStoredPreferences(): void {
-  const preferences = readStoredPreferences();
+  const preferences = normalizeStoredPreferences(readStoredPreferences());
 
-  if (preferences.theme === "dark" || preferences.theme === "light" || preferences.theme === "system") {
-    selectedTheme = preferences.theme;
-  }
-
-  if (typeof preferences.writingProfile === "string" && preferences.writingProfile in writingProfiles) {
-    writingProfileSelect.value = preferences.writingProfile;
-  }
+  selectedTheme = preferences.theme;
+  writingProfileSelect.value = preferences.writingProfile;
 
   applyTheme(selectedTheme);
-}
-
-function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedText: string): string {
-  const profile = writingProfiles[profileId];
-  const profileInstructions = profile.instructions.map((instruction) => `- ${instruction}`).join("\n");
-  const trimmedSelectedText = selectedText.trim();
-
-  // Keep prompt construction outside the UI handler so profile rules stay explicit,
-  // readable, and easy to inspect during development and review.
-  if (trimmedSelectedText.length === 0) {
-    return [
-      "Ruolo:",
-      "Sei LocalOfficeAI e devi rispondere alla richiesta dell'utente seguendo il profilo di scrittura selezionato.",
-      "",
-      `Profilo di scrittura: ${profile.label}`,
-      "Istruzioni del profilo:",
-      profileInstructions,
-      "",
-      "Modalita':",
-      "Richiesta libera senza testo selezionato.",
-      "",
-      "Richiesta dell'utente:",
-      userPrompt,
-      "",
-      "Output richiesto:",
-      "Applica il profilo di scrittura selezionato e restituisci solo il testo finale, salvo richiesta diversa dell'utente."
-    ].join("\n");
-  }
-
-  return [
-    "Ruolo:",
-    "Sei LocalOfficeAI e devi riscrivere o trasformare il testo fornito seguendo il profilo di scrittura selezionato.",
-    "",
-    `Profilo di scrittura: ${profile.label}`,
-    "Istruzioni del profilo:",
-    profileInstructions,
-    "",
-    "Richiesta dell'utente:",
-    userPrompt,
-    "",
-    "Testo di partenza:",
-    trimmedSelectedText,
-    "",
-    "Output richiesto:",
-    "Restituisci solo il testo finale richiesto, senza titoli, note o spiegazioni aggiuntive."
-  ].join("\n");
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.9.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni e copia negli appunti per l'inserimento manuale nel documento.
+Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.10.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
 
 ## Contenuto
 
@@ -67,6 +67,23 @@ npm run build
 
 La build genera i file statici in `dist/`.
 
+## Test automatici
+
+Per la release `v0.10.0` e' disponibile una base prudente di test automatici per la logica pura del task pane:
+
+- builder dei prompt;
+- prompt rapidi;
+- normalizzazione preferenze locali;
+- selezione logica della vista attiva.
+
+Esegui i test con:
+
+```bash
+npm run test
+```
+
+I test usano un runner Node minimale basato su `node:assert/strict` su moduli TypeScript gia' compilati, così restano leggeri, rapidi e indipendenti dal rendering reale di Word.
+
 ## Avvio server locale
 
 Prima installa o rinnova il certificato di sviluppo per `https://localhost`:
@@ -85,7 +102,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.9.0
+## Prerequisiti per provare la v0.10.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -138,7 +155,7 @@ Procedura generale consigliata per test locali:
 22. verifica il messaggio di conferma della copia;
 23. incolla manualmente il testo nel documento Word nel punto desiderato.
 
-La v0.9.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+La v0.10.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
 
 LocalOfficeAI puo' lavorare in due modalita':
 
