@@ -19,8 +19,10 @@ const userPromptInput = getRequiredElement("user-prompt", HTMLTextAreaElement);
 const generatePreviewButton = getRequiredElement("generate-preview-button", HTMLButtonElement);
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
 const previewOutput = getRequiredElement("preview-output", HTMLPreElement);
+const copyPreviewButton = getRequiredElement("copy-preview-button", HTMLButtonElement);
 
 let cachedSelectionText = "";
+let cachedPreviewText = "";
 
 function showMessage(message: string): void {
   statusMessage.textContent = message;
@@ -35,45 +37,118 @@ function showSelection(text: string): void {
   cachedSelectionText = text;
 }
 
-function showPreviewMessage(message: string): void {
-  previewStatusMessage.textContent = message;
+function clearPreviewState(): void {
   previewOutput.hidden = true;
   previewOutput.textContent = "";
+  cachedPreviewText = "";
+  updateCopyPreviewButtonState();
+}
+
+function showPreviewMessage(message: string, clearPreview = true): void {
+  previewStatusMessage.textContent = message;
+
+  if (clearPreview) {
+    clearPreviewState();
+  }
 }
 
 function showPreviewResult(text: string): void {
   previewStatusMessage.textContent = "Anteprima generata correttamente.";
   previewOutput.textContent = text;
   previewOutput.hidden = false;
+  cachedPreviewText = text;
+  updateCopyPreviewButtonState();
 }
 
-async function getCurrentSelectionText(): Promise<string> {
-  return Word.run(async (context) => {
+function updateCopyPreviewButtonState(): void {
+  copyPreviewButton.disabled = cachedPreviewText.trim().length === 0;
+}
+
+async function readCurrentSelectionText(): Promise<string> {
+  const selectionText = await Word.run(async (context) => {
     const selection = context.document.getSelection();
     selection.load("text");
 
     await context.sync();
 
-    return selection.text.trim();
+    const currentSelection = selection.text.trim();
+
+    if (currentSelection.length === 0) {
+      throw new Error("NO_SELECTION");
+    }
+    return currentSelection;
   });
+
+  return selectionText;
+}
+
+async function copyPreviewWithClipboardApi(previewText: string): Promise<void> {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("CLIPBOARD_API_UNAVAILABLE");
+  }
+
+  await navigator.clipboard.writeText(previewText);
+}
+
+function copyPreviewWithExecCommand(previewText: string): void {
+  const temporaryTextarea = document.createElement("textarea");
+  temporaryTextarea.value = previewText;
+  temporaryTextarea.setAttribute("readonly", "true");
+  temporaryTextarea.style.position = "fixed";
+  temporaryTextarea.style.top = "-9999px";
+  temporaryTextarea.style.left = "-9999px";
+  document.body.appendChild(temporaryTextarea);
+  temporaryTextarea.focus();
+  temporaryTextarea.select();
+
+  try {
+    const copySucceeded = document.execCommand("copy");
+
+    if (!copySucceeded) {
+      throw new Error("EXEC_COMMAND_COPY_FAILED");
+    }
+  } finally {
+    document.body.removeChild(temporaryTextarea);
+  }
+}
+
+async function copyGeneratedPreview(): Promise<void> {
+  if (cachedPreviewText.trim().length === 0) {
+    showPreviewMessage("Genera prima un'anteprima.", false);
+    return;
+  }
+
+  try {
+    await copyPreviewWithClipboardApi(cachedPreviewText);
+    previewStatusMessage.textContent = "Anteprima copiata negli appunti. Incollala nel documento nel punto desiderato.";
+  } catch (clipboardError) {
+    console.warn("Copia tramite navigator.clipboard non riuscita, provo il fallback execCommand.", clipboardError);
+
+    try {
+      copyPreviewWithExecCommand(cachedPreviewText);
+      previewStatusMessage.textContent = "Anteprima copiata negli appunti. Incollala nel documento nel punto desiderato.";
+    } catch (fallbackError) {
+      console.error("Copia dell'anteprima non riuscita.", fallbackError);
+      showPreviewMessage("Impossibile copiare l'anteprima. Seleziona manualmente il testo dell'anteprima e copialo.", false);
+    }
+  }
 }
 
 async function readCurrentSelection(): Promise<void> {
   showMessage("Lettura della selezione in corso...");
 
   try {
-    const text = await getCurrentSelectionText();
-
-    if (text.length === 0) {
-      showMessage("Nessun testo selezionato. Seleziona del testo in Word e riprova.");
+    const text = await readCurrentSelectionText();
+    showSelection(text);
+    clearPreviewState();
+    previewStatusMessage.textContent = "Genera un'anteprima usando il testo letto e una richiesta personalizzata.";
+  } catch (error) {
+    if (error instanceof Error && error.message === "NO_SELECTION") {
+      showMessage("Seleziona un testo nel documento e premi Leggi selezione.");
       return;
     }
 
-    showSelection(text);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Errore sconosciuto durante la lettura della selezione.";
-    showMessage(`Impossibile leggere la selezione: ${message}`);
+    showMessage("Impossibile leggere la selezione corrente nel documento.");
   }
 }
 
@@ -94,40 +169,24 @@ function getUserFacingBridgeError(message: string): string {
 async function generatePreview(): Promise<void> {
   const userPrompt = userPromptInput.value.trim();
 
+  if (cachedSelectionText.trim().length === 0) {
+    showPreviewMessage("Seleziona un testo nel documento e premi Leggi selezione.");
+    return;
+  }
+
   if (userPrompt.length === 0) {
-    showPreviewMessage("Inserisci una richiesta prima di generare l'anteprima.");
+    showPreviewMessage("Scrivi una richiesta per generare l'anteprima.");
     return;
   }
 
   showPreviewMessage("Preparazione dell'anteprima locale in corso...");
-
-  let selectedText = "";
-
-  try {
-    selectedText = await getCurrentSelectionText();
-  } catch {
-    selectedText = "";
-  }
-
-  const sourceText = selectedText || cachedSelectionText;
-
-  if (sourceText.length === 0) {
-    showPreviewMessage(
-      "Manca il testo selezionato. Seleziona del testo in Word oppure leggilo prima dal pannello."
-    );
-    return;
-  }
-
-  if (selectedText.length > 0) {
-    showSelection(selectedText);
-  }
 
   const bridgePrompt = [
     "Istruzione dell'utente:",
     userPrompt,
     "",
     "Testo selezionato:",
-    sourceText
+    cachedSelectionText
   ].join("\n");
 
   try {
@@ -143,7 +202,6 @@ async function generatePreview(): Promise<void> {
 
     const data = (await response.json()) as {
       error?: unknown;
-      model?: unknown;
       response?: unknown;
     };
 
@@ -173,6 +231,7 @@ Office.onReady((info) => {
     showMessage("Questo add-in è disponibile solo in Microsoft Word.");
     readSelectionButton.disabled = true;
     generatePreviewButton.disabled = true;
+    copyPreviewButton.disabled = true;
     return;
   }
 
@@ -183,4 +242,10 @@ Office.onReady((info) => {
   generatePreviewButton.addEventListener("click", () => {
     void generatePreview();
   });
+
+  copyPreviewButton.addEventListener("click", () => {
+    void copyGeneratedPreview();
+  });
+
+  updateCopyPreviewButtonState();
 });
