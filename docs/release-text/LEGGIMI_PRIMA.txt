@@ -1,0 +1,56 @@
+LocalOfficeAI v0.15.2 - ALPHA PORTABLE
+======================================
+
+IMPORTANTE:
+- Questo e' un pacchetto alpha portable.
+- Non e' ancora un installer one-click.
+- Non modifica automaticamente Word, registry o firewall.
+
+PREREQUISITI MINIMI:
+1. Windows
+2. Microsoft Word desktop installato
+3. Node.js LTS installato e disponibile nel PATH
+4. Ollama installato
+5. Almeno un modello Ollama leggero disponibile
+   Consigliati:
+   - qwen2.5-coder:1.5b
+   - qwen2.5-coder:3b
+
+COME VERIFICARE I PREREQUISITI:
+- Apri PowerShell
+- Esegui:
+  node --version
+  npm --version
+  ollama --version
+  ollama list
+  Test-NetConnection localhost -Port 11434
+
+FILE DA AVVIARE:
+- Start-LocalOfficeAI.bat
+
+CONTROLLO PREREQUISITI CONSIGLIATO:
+- tools\Test-LocalOfficeAI-Prerequisites.ps1
+
+COME PREPARARE WORD:
+1. Esegui:
+   tools\Prepare-WordSideloadCatalog.ps1
+2. Segui la guida dettagliata in:
+   docs\WORD_SIDELOAD_WINDOWS.md
+
+SE QUALCOSA NON PARTE:
+- Controlla:
+  docs\TROUBLESHOOTING_WINDOWS.md
+- Controlla i log dalla tray app
+- Verifica che Ollama sia avviato
+- Verifica che Node.js e npm siano installati
+
+GUIDE DETTAGLIATE:
+- docs\INSTALL_WINDOWS.md
+- docs\WORD_SIDELOAD_WINDOWS.md
+- docs\FIRST_RUN_CHECKLIST.md
+- docs\TROUBLESHOOTING_WINDOWS.md
+
+NOTA:
+Il documento Word non viene modificato direttamente.
+Il flusso resta:
+anteprima -> copia negli appunti -> incolla manuale

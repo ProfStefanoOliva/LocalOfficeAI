@@ -1,9 +1,11 @@
-# First Run Checklist - LocalOfficeAI v0.15.0
+# First Run Checklist - LocalOfficeAI v0.15.2
 
 Usa questa checklist per il primo avvio su Windows.
 
 ## Prima di aprire Word
 
+- [ ] Ho letto `LEGGIMI_PRIMA.txt`.
+- [ ] Ho eseguito `tools\Test-LocalOfficeAI-Prerequisites.ps1`.
 - [ ] Ollama e' installato.
 - [ ] Almeno un modello Ollama e' disponibile.
 - [ ] La tray app LocalOfficeAI e' stata avviata.
@@ -42,6 +44,7 @@ Usa questa checklist per il primo avvio su Windows.
 - [ ] Verifica che la porta `3000` sia attiva.
 - [ ] Riavvia i componenti dalla tray.
 - [ ] Se necessario, chiudi e riapri Word.
+- [ ] Consulta `docs\TROUBLESHOOTING_WINDOWS.md`.
 
 ## Limiti attuali
 
