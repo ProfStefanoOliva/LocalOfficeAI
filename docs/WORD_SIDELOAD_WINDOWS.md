@@ -26,6 +26,12 @@ Lo script:
 - stampa il percorso da usare nei passaggi successivi;
 - non modifica registry, firewall o condivisioni SMB.
 
+Prima di procedere, su PC bersaglio puoi anche verificare i prerequisiti con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
+
 ## 2. Condividi la cartella in Windows
 
 Se Word richiede un catalogo condiviso:
@@ -80,6 +86,18 @@ Se non puoi condividere la cartella automaticamente, fermati qui e crea la condi
 8. Copia negli appunti.
 9. Incolla manualmente nel documento.
 
+Comandi PowerShell utili per una diagnosi rapida:
+
+```powershell
+node --version
+npm --version
+ollama --version
+ollama list
+Test-NetConnection localhost -Port 11434
+Test-NetConnection localhost -Port 3210
+Test-NetConnection localhost -Port 3000
+```
+
 ## Problemi comuni
 
 ### Word mostra errore sul componente aggiuntivo
@@ -112,6 +130,7 @@ Se non puoi condividere la cartella automaticamente, fermati qui e crea la condi
 - prova un modello piu' leggero;
 - chiudi altri programmi pesanti;
 - verifica le risorse RAM e GPU disponibili.
+- se possibile, riprova con `qwen2.5-coder:1.5b` o `qwen2.5-coder:3b`.
 
 ### Certificato HTTPS o dev-server
 
@@ -129,6 +148,10 @@ Se non puoi condividere la cartella automaticamente, fermati qui e crea la condi
 - controlla se un'altra istanza e' gia' attiva;
 - usa `Arresta componenti` e poi `Riavvia componenti`;
 - controlla i log dalla tray.
+
+Per problemi piu' estesi, consulta anche:
+
+- `docs/TROUBLESHOOTING_WINDOWS.md`
 
 ## Limiti dichiarati
 

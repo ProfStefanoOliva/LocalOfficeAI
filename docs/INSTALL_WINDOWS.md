@@ -1,6 +1,6 @@
-# Installazione Windows di LocalOfficeAI v0.15.0
+# Installazione Windows di LocalOfficeAI v0.15.2
 
-Questa release introduce una prima base di distribuzione della tray app e una procedura guidata piu' chiara per Word su Windows.
+Questa release irrobustisce la distribuzione alpha portable della tray app e la procedura guidata per Word su Windows.
 
 ## Nota sui marchi
 
@@ -8,14 +8,14 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-## Cosa include v0.15.0
+## Cosa include v0.15.2
 
 - tray app Electron per LocalOfficeAI;
 - packaging portable in formato cartella/ZIP, non ancora installer definitivo;
 - script di supporto per preparare il catalogo sideload di Word;
 - documentazione passo passo per utenti Windows non tecnici.
 
-Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.0`, che mette insieme:
+Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.2`, che mette insieme:
 
 - tray packaged;
 - `local-bridge`;
@@ -33,6 +33,18 @@ Prima di iniziare verifica di avere:
 4. Almeno un modello Ollama disponibile.
 5. Accesso al repository o alla cartella release candidate locale preparata.
 
+Comandi PowerShell utili per un PC bersaglio:
+
+```powershell
+node --version
+npm --version
+ollama --version
+ollama list
+Test-NetConnection localhost -Port 11434
+Test-NetConnection localhost -Port 3210
+Test-NetConnection localhost -Port 3000
+```
+
 ## Avvio della tray app
 
 Se hai una release candidate locale preparata:
@@ -45,7 +57,7 @@ Se hai una release candidate locale preparata:
 Nota prudenziale:
 
 - il file ZIP generato da Electron Forge e' la base portable della sola tray app;
-- per un test locale completo di v0.15.0 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
+- per un test locale completo di v0.15.2 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
 
 Se stai lavorando dal repository:
 
@@ -53,6 +65,12 @@ Se stai lavorando dal repository:
 2. Esegui `npm run build`.
 3. Esegui `npm run make` per creare il pacchetto ZIP portable.
 4. In alternativa, per sviluppo, esegui `npm run start`.
+
+Prima del primo avvio su PC bersaglio e' consigliato eseguire:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
 
 ## Cosa deve comparire
 
@@ -88,6 +106,8 @@ La tray non blocca l'avvio degli altri componenti. Devi:
 4. Controlla i log di:
    - `local-bridge.log`
    - `addin-word.log`
+5. Se serve, consulta anche:
+   - `docs/TROUBLESHOOTING_WINDOWS.md`
 
 ## Importante
 

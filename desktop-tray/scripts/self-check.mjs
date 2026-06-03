@@ -8,8 +8,11 @@ const logsDir = join(import.meta.dirname, "..", "tmp-runtime-logs");
 mkdirSync(logsDir, { recursive: true });
 
 const runtime = new LocalOfficeAIRuntime({
-  repoRoot,
-  logsDir
+  appRoot: repoRoot,
+  logsDir,
+  localBridgeDir: join(repoRoot, "local-bridge"),
+  addinWordDir: join(repoRoot, "addin-word"),
+  mode: "repository-development"
 });
 
 try {

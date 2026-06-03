@@ -10,7 +10,7 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word è usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-Nella release `v0.15.0` LocalOfficeAI aggiunge una prima fondazione di packaging portable della tray app e una guida piu' chiara per il sideload di Word su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
+Nella release `v0.15.2` LocalOfficeAI irrobustisce la distribuzione portable della tray app e la guida per il sideload di Word su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
 
 ## Obiettivo iniziale
 
@@ -58,19 +58,20 @@ Note importanti:
 
 ## Guida Windows e Word
 
-Per la release `v0.15.0` sono disponibili guide dedicate:
+Per la release `v0.15.2` sono disponibili guide dedicate:
 
 - [Installazione Windows](docs/INSTALL_WINDOWS.md)
 - [Configurazione Word con cartella condivisa](docs/WORD_SIDELOAD_WINDOWS.md)
 - [First Run Checklist](docs/FIRST_RUN_CHECKLIST.md)
+- [Troubleshooting Windows](docs/TROUBLESHOOTING_WINDOWS.md)
 - [Desktop Tray](docs/desktop-tray.md)
 
 ## Packaging tray
 
-Il packaging introdotto in `v0.15.0` e' prudente:
+Il packaging introdotto in `v0.15.2` e' prudente:
 
 - produce una base portable della tray app;
-- la cartella `release_candidates/LocalOfficeAI-v0.15.0` resta il modo piu' semplice per una prova locale completa;
+- la cartella `release_candidates/LocalOfficeAI-v0.15.2` resta il modo piu' semplice per una prova locale completa;
 - puo' generare artefatti ZIP per Windows;
 - non crea ancora un installer definitivo one-click;
 - non abilita autostart con Windows;

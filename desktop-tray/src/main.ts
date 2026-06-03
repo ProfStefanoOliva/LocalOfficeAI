@@ -1,6 +1,6 @@
 import { app, Menu, Tray, nativeImage, shell, type Event as ElectronEvent } from "electron";
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { LocalOfficeAIRuntime, type LocalOfficeAIStatus } from "./local-runtime.js";
 
 const singleInstanceLock = app.requestSingleInstanceLock();
@@ -9,30 +9,105 @@ if (!singleInstanceLock) {
   app.quit();
 }
 
-function looksLikeLocalOfficeAIRoot(candidatePath: string): boolean {
-  return existsSync(join(candidatePath, "addin-word")) && existsSync(join(candidatePath, "local-bridge"));
+type ResolvedLocalOfficeAIPaths = {
+  appRoot: string;
+  localBridgeDir: string;
+  addinWordDir: string;
+  instructionsPath: string;
+  mode: "repository-development" | "portable-release" | "invalid";
+  detail: string;
+};
+
+function looksLikeRepositoryRoot(candidatePath: string): boolean {
+  return (
+    existsSync(join(candidatePath, "addin-word")) &&
+    existsSync(join(candidatePath, "local-bridge")) &&
+    existsSync(join(candidatePath, "desktop-tray"))
+  );
 }
 
-function resolveLocalOfficeAIRoot(): string {
+function looksLikePortableRoot(candidatePath: string): boolean {
+  return (
+    existsSync(join(candidatePath, "manifest.xml")) &&
+    existsSync(join(candidatePath, "packages")) &&
+    existsSync(join(candidatePath, "portable"))
+  );
+}
+
+function findRootByWalkingUp(startPath: string): string | null {
+  let currentPath = resolve(startPath);
+
+  for (let index = 0; index < 6; index += 1) {
+    if (looksLikePortableRoot(currentPath) || looksLikeRepositoryRoot(currentPath)) {
+      return currentPath;
+    }
+
+    const parentPath = dirname(currentPath);
+
+    if (parentPath === currentPath) {
+      break;
+    }
+
+    currentPath = parentPath;
+  }
+
+  return null;
+}
+
+function resolveLocalOfficeAIPaths(): ResolvedLocalOfficeAIPaths {
   const candidatePaths = [
+    process.env.LOCALOFFICEAI_ROOT,
     process.env.LOCALOFFICEAI_REPO_ROOT,
-    resolve(__dirname, "..", ".."),
-    resolve(process.resourcesPath, ".."),
-    resolve(process.resourcesPath, "..", "..")
+    process.env.LOCALOFFICEAI_PORTABLE_ROOT,
+    process.env.LOCALOFFICEAI_ROOT ? findRootByWalkingUp(process.env.LOCALOFFICEAI_ROOT) : null,
+    findRootByWalkingUp(dirname(process.execPath)),
+    findRootByWalkingUp(process.resourcesPath),
+    findRootByWalkingUp(resolve(__dirname, "..", ".."))
   ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
 
   for (const candidatePath of candidatePaths) {
-    if (looksLikeLocalOfficeAIRoot(candidatePath)) {
-      return candidatePath;
+    if (looksLikePortableRoot(candidatePath)) {
+      return {
+        appRoot: candidatePath,
+        localBridgeDir: join(candidatePath, "packages", "local-bridge"),
+        addinWordDir: join(candidatePath, "packages", "addin-word"),
+        instructionsPath: existsSync(join(candidatePath, "LEGGIMI_PRIMA.txt"))
+          ? join(candidatePath, "LEGGIMI_PRIMA.txt")
+          : existsSync(join(candidatePath, "README.txt"))
+            ? join(candidatePath, "README.txt")
+            : join(candidatePath, "README.md"),
+        mode: "portable-release",
+        detail: `Root portable rilevata: ${candidatePath}`
+      };
+    }
+
+    if (looksLikeRepositoryRoot(candidatePath)) {
+      return {
+        appRoot: candidatePath,
+        localBridgeDir: join(candidatePath, "local-bridge"),
+        addinWordDir: join(candidatePath, "addin-word"),
+        instructionsPath: join(candidatePath, "README.md"),
+        mode: "repository-development",
+        detail: `Root repository rilevata: ${candidatePath}`
+      };
     }
   }
 
-  return resolve(__dirname, "..", "..");
+  const fallbackRoot = resolve(__dirname, "..", "..");
+
+  return {
+    appRoot: fallbackRoot,
+    localBridgeDir: join(fallbackRoot, "local-bridge"),
+    addinWordDir: join(fallbackRoot, "addin-word"),
+    instructionsPath: join(fallbackRoot, "README.md"),
+    mode: "invalid",
+    detail:
+      "Root di LocalOfficeAI non riconosciuta. Servono manifest.xml + packages + portable per la release portable, oppure addin-word + local-bridge + desktop-tray nel repository."
+  };
 }
 
-const repoRoot = resolveLocalOfficeAIRoot();
+const localOfficeAIPaths = resolveLocalOfficeAIPaths();
 const trayIconPath = resolve(__dirname, "..", "assets", "icon-32.png");
-const instructionsPath = resolve(repoRoot, "README.md");
 const selfCheckMode = process.argv.includes("--self-check");
 
 let tray: Tray | null = null;
@@ -57,6 +132,7 @@ function formatStatusLine(label: string, value: { active: boolean; detail: strin
 
 async function refreshStatus(): Promise<void> {
   if (!runtime) {
+    rebuildTrayMenu();
     return;
   }
 
@@ -100,7 +176,7 @@ async function ensureComponentsStarted(source: "auto" | "manual" | "restart"): P
 }
 
 function rebuildTrayMenu(): void {
-  if (!tray || !runtime) {
+  if (!tray) {
     return;
   }
 
@@ -131,6 +207,7 @@ function rebuildTrayMenu(): void {
         },
         {
           label: "Aggiorna stato",
+          enabled: runtime !== null,
           click: () => {
             void refreshStatus();
           }
@@ -139,6 +216,7 @@ function rebuildTrayMenu(): void {
     },
     {
       label: "Avvia componenti",
+      enabled: runtime !== null,
       click: async () => {
         try {
           await ensureComponentsStarted("manual");
@@ -151,6 +229,7 @@ function rebuildTrayMenu(): void {
     },
     {
       label: "Arresta componenti",
+      enabled: runtime !== null,
       click: async () => {
         try {
           await runtime?.stopManagedComponents();
@@ -162,6 +241,7 @@ function rebuildTrayMenu(): void {
     },
     {
       label: "Riavvia componenti",
+      enabled: runtime !== null,
       click: async () => {
         try {
           await ensureComponentsStarted("restart");
@@ -188,12 +268,12 @@ function rebuildTrayMenu(): void {
     {
       label: "Apri istruzioni",
       click: async () => {
-        if (existsSync(instructionsPath)) {
-          await shell.openPath(instructionsPath);
+        if (existsSync(localOfficeAIPaths.instructionsPath)) {
+          await shell.openPath(localOfficeAIPaths.instructionsPath);
           return;
         }
 
-        await shell.openPath(repoRoot);
+        await shell.openPath(localOfficeAIPaths.appRoot);
       }
     },
     {
@@ -214,16 +294,29 @@ function rebuildTrayMenu(): void {
 }
 
 async function createTray(): Promise<void> {
-  runtime = new LocalOfficeAIRuntime({
-    repoRoot,
-    logsDir: join(app.getPath("userData"), "logs")
-  });
-
   tray = new Tray(getTrayImage());
+  console.log(`[LocalOfficeAI] ${localOfficeAIPaths.detail}`);
+
+  if (localOfficeAIPaths.mode !== "invalid") {
+    runtime = new LocalOfficeAIRuntime({
+      appRoot: localOfficeAIPaths.appRoot,
+      localBridgeDir: localOfficeAIPaths.localBridgeDir,
+      addinWordDir: localOfficeAIPaths.addinWordDir,
+      logsDir: join(app.getPath("userData"), "logs"),
+      mode: localOfficeAIPaths.mode
+    });
+  } else {
+    cachedStatus = {
+      ollama: { active: false, detail: "Root LocalOfficeAI non valida o non trovata." },
+      localBridge: { active: false, detail: localOfficeAIPaths.detail },
+      addinWord: { active: false, detail: localOfficeAIPaths.detail }
+    };
+  }
+
   rebuildTrayMenu();
   await refreshStatus();
 
-  if (!selfCheckMode) {
+  if (!selfCheckMode && runtime) {
     try {
       await ensureComponentsStarted("auto");
     } catch (error) {

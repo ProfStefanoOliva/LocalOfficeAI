@@ -1,6 +1,6 @@
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from "node:fs";
 import { dirname, join } from "node:path";
-import { ChildProcess, spawn } from "node:child_process";
+import { ChildProcess, spawn, spawnSync } from "node:child_process";
 
 export type ComponentName = "local-bridge" | "addin-word";
 
@@ -23,8 +23,11 @@ type ComponentProcessInfo = {
 };
 
 export type RuntimeConfig = {
-  repoRoot: string;
+  appRoot: string;
   logsDir: string;
+  localBridgeDir: string;
+  addinWordDir: string;
+  mode: "repository-development" | "portable-release";
 };
 
 type HttpStatusCheck = {
@@ -50,6 +53,17 @@ type BridgeOllamaHealthResponse = {
   error?: unknown;
 };
 
+type CommandCheckResult = {
+  available: boolean;
+  detail: string;
+};
+
+type ManagedLogWriter = {
+  write(chunk: string | Buffer): void;
+  banner(message: string): void;
+  end(): void;
+};
+
 const bridgeUrl = "http://localhost:3210/health";
 const bridgeLocalAISettingsUrl = "http://localhost:3210/settings/local-ai";
 const bridgeOllamaHealthUrl = "http://localhost:3210/ollama/health";
@@ -66,6 +80,67 @@ function ensureDirectory(directoryPath: string): void {
 function createLogStream(logFilePath: string): WriteStream {
   ensureDirectory(dirname(logFilePath));
   return createWriteStream(logFilePath, { flags: "a" });
+}
+
+function createManagedLogWriter(logFilePath: string): ManagedLogWriter {
+  const stream = createLogStream(logFilePath);
+  let closed = false;
+
+  const write = (chunk: string | Buffer): void => {
+    if (closed || stream.destroyed || stream.writableEnded) {
+      return;
+    }
+
+    try {
+      stream.write(chunk);
+    } catch (error) {
+      const code = error instanceof Error && "code" in error ? String((error as { code?: unknown }).code) : "";
+
+      if (code === "ERR_STREAM_WRITE_AFTER_END" || code === "EPIPE") {
+        closed = true;
+        return;
+      }
+
+      console.error("Scrittura log non riuscita.", error);
+      closed = true;
+    }
+  };
+
+  stream.on("error", (error) => {
+    const code = error instanceof Error && "code" in error ? String((error as { code?: unknown }).code) : "";
+
+    if (code === "ERR_STREAM_WRITE_AFTER_END" || code === "EPIPE") {
+      closed = true;
+      return;
+    }
+
+    console.error("Errore stream di log.", error);
+    closed = true;
+  });
+
+  return {
+    write,
+    banner(message: string) {
+      write(`\n[${new Date().toISOString()}] ${message}\n`);
+    },
+    end() {
+      if (closed || stream.destroyed || stream.writableEnded) {
+        return;
+      }
+
+      closed = true;
+
+      try {
+        stream.end();
+      } catch (error) {
+        const code = error instanceof Error && "code" in error ? String((error as { code?: unknown }).code) : "";
+
+        if (code !== "ERR_STREAM_WRITE_AFTER_END" && code !== "EPIPE") {
+          console.error("Chiusura stream di log non riuscita.", error);
+        }
+      }
+    }
+  };
 }
 
 function quoteForWindowsCommand(value: string): string {
@@ -97,12 +172,37 @@ function createNpmCommand(args: string[]): SpawnedCommand {
   };
 }
 
-function writeProcessBanner(stream: WriteStream, message: string): void {
-  stream.write(`\n[${new Date().toISOString()}] ${message}\n`);
-}
-
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function checkNodeCommandAvailable(): CommandCheckResult {
+  const result = spawnSync("node", ["--version"], {
+    shell: false,
+    windowsHide: true,
+    stdio: "ignore"
+  });
+
+  if (result.status === 0) {
+    return { available: true, detail: "Node.js disponibile nel PATH." };
+  }
+
+  return { available: false, detail: "Node.js non disponibile nel PATH." };
+}
+
+function checkNpmCommandAvailable(): CommandCheckResult {
+  const npmCommand = createNpmCommand(["--version"]);
+  const result = spawnSync(npmCommand.command, npmCommand.args, {
+    shell: false,
+    windowsHide: true,
+    stdio: "ignore"
+  });
+
+  if (result.status === 0) {
+    return { available: true, detail: "npm disponibile nel PATH." };
+  }
+
+  return { available: false, detail: "npm non disponibile nel PATH." };
 }
 
 async function checkHttpEndpoint(url: string): Promise<HttpStatusCheck> {
@@ -161,10 +261,10 @@ async function runCommandWithLogging(
   const commandToRun = createNpmCommand(args);
 
   await new Promise<void>((resolve, reject) => {
-    const logStream = createLogStream(logFilePath);
-    writeProcessBanner(logStream, `Componente: ${componentName}`);
-    writeProcessBanner(logStream, `CWD: ${workingDirectory}`);
-    writeProcessBanner(logStream, `Comando: ${commandToRun.displayCommand}`);
+    const logWriter = createManagedLogWriter(logFilePath);
+    logWriter.banner(`Componente: ${componentName}`);
+    logWriter.banner(`CWD: ${workingDirectory}`);
+    logWriter.banner(`Comando: ${commandToRun.displayCommand}`);
 
     const processHandle = spawn(commandToRun.command, commandToRun.args, {
       cwd: workingDirectory,
@@ -184,43 +284,43 @@ async function runCommandWithLogging(
       callback();
     };
 
-    writeProcessBanner(logStream, `PID: ${String(processHandle.pid ?? "non disponibile")}`);
+    logWriter.banner(`PID: ${String(processHandle.pid ?? "non disponibile")}`);
 
     const timeoutHandle = setTimeout(() => {
-      writeProcessBanner(logStream, `Timeout build dopo ${String(timeoutMs)} ms.`);
+      logWriter.banner(`Timeout build dopo ${String(timeoutMs)} ms.`);
       processHandle.kill();
       settle(() => {
-        logStream.end();
+        logWriter.end();
         reject(new Error(`Timeout durante il comando ${commandToRun.displayCommand}`));
       });
     }, timeoutMs);
 
     processHandle.stdout?.on("data", (chunk) => {
-      logStream.write(chunk);
+      logWriter.write(chunk);
     });
 
     processHandle.stderr?.on("data", (chunk) => {
-      logStream.write(chunk);
+      logWriter.write(chunk);
     });
 
     processHandle.once("error", (error) => {
       clearTimeout(timeoutHandle);
-      writeProcessBanner(logStream, `Errore di spawn: ${String(error)}`);
+      logWriter.banner(`Errore di spawn: ${String(error)}`);
       settle(() => {
-        logStream.end();
+        logWriter.end();
         reject(error);
       });
     });
 
     processHandle.once("exit", (code, signal) => {
-      writeProcessBanner(logStream, `Exit event - code: ${String(code)}, signal: ${String(signal)}`);
+      logWriter.banner(`Exit event - code: ${String(code)}, signal: ${String(signal)}`);
     });
 
     processHandle.once("close", (code, signal) => {
       clearTimeout(timeoutHandle);
-      writeProcessBanner(logStream, `Close event - code: ${String(code)}, signal: ${String(signal)}`);
+      logWriter.banner(`Close event - code: ${String(code)}, signal: ${String(signal)}`);
       settle(() => {
-        logStream.end();
+        logWriter.end();
 
         if (code === 0) {
           resolve();
@@ -234,13 +334,19 @@ async function runCommandWithLogging(
 }
 
 export class LocalOfficeAIRuntime {
-  private readonly repoRoot: string;
+  private readonly appRoot: string;
   private readonly logsDir: string;
+  private readonly localBridgeDir: string;
+  private readonly addinWordDir: string;
+  private readonly mode: "repository-development" | "portable-release";
   private readonly componentProcesses: Record<ComponentName, ComponentProcessInfo>;
 
   constructor(config: RuntimeConfig) {
-    this.repoRoot = config.repoRoot;
+    this.appRoot = config.appRoot;
     this.logsDir = config.logsDir;
+    this.localBridgeDir = config.localBridgeDir;
+    this.addinWordDir = config.addinWordDir;
+    this.mode = config.mode;
     this.componentProcesses = {
       "local-bridge": {
         logFilePath: join(this.logsDir, "local-bridge.log")
@@ -257,12 +363,14 @@ export class LocalOfficeAIRuntime {
   }
 
   private logComponentMessage(componentName: ComponentName, message: string): void {
-    const logStream = createLogStream(this.componentProcesses[componentName].logFilePath);
-    writeProcessBanner(logStream, message);
-    logStream.end();
+    const logWriter = createManagedLogWriter(this.componentProcesses[componentName].logFilePath);
+    logWriter.banner(message);
+    logWriter.end();
   }
 
   async getStatus(): Promise<LocalOfficeAIStatus> {
+    const nodeStatus = checkNodeCommandAvailable();
+    const npmStatus = checkNpmCommandAvailable();
     const [localBridge, addinWordActive] = await Promise.all([
       checkHttpEndpoint(bridgeUrl),
       checkTcpPort("127.0.0.1", addinPort)
@@ -312,18 +420,35 @@ export class LocalOfficeAIRuntime {
         active: localBridge.active,
         detail: localBridge.active
           ? "Attivo o sembra attivo sulla porta 3210"
-          : `Non attivo (${localBridge.detail})`
+          : !nodeStatus.available || !npmStatus.available
+            ? `Non attivo. ${nodeStatus.available ? "" : `${nodeStatus.detail} `}${npmStatus.available ? "" : npmStatus.detail}`.trim()
+            : `Non attivo (${localBridge.detail})`
       },
       addinWord: {
         active: addinWordActive,
         detail: addinWordActive
           ? "Attivo o sembra attivo sulla porta 3000"
-          : "Non attivo sulla porta 3000"
+          : !nodeStatus.available || !npmStatus.available
+            ? `Non attivo. ${nodeStatus.available ? "" : `${nodeStatus.detail} `}${npmStatus.available ? "" : npmStatus.detail}`.trim()
+            : "Non attivo sulla porta 3000"
       }
     };
   }
 
   async startComponents(source: ComponentStartSource = "manual"): Promise<void> {
+    const nodeStatus = checkNodeCommandAvailable();
+    const npmStatus = checkNpmCommandAvailable();
+
+    this.logComponentMessage("local-bridge", `Root rilevata: ${this.appRoot} (${this.mode}).`);
+    this.logComponentMessage("addin-word", `Root rilevata: ${this.appRoot} (${this.mode}).`);
+
+    if (!nodeStatus.available || !npmStatus.available) {
+      const message = `Avvio componenti annullato. ${nodeStatus.detail} ${npmStatus.detail}`.trim();
+      this.logComponentMessage("local-bridge", message);
+      this.logComponentMessage("addin-word", message);
+      return;
+    }
+
     let status = await this.getStatus();
     const sourceLabel = `Tentativo avvio componenti (${source}).`;
 
@@ -366,10 +491,15 @@ export class LocalOfficeAIRuntime {
   }
 
   private async startLocalBridge(): Promise<void> {
-    const workingDirectory = join(this.repoRoot, "local-bridge");
+    const workingDirectory = this.localBridgeDir;
     const logFilePath = this.componentProcesses["local-bridge"].logFilePath;
 
-    createLogStream(logFilePath).end();
+    if (!existsSync(workingDirectory)) {
+      this.logComponentMessage("local-bridge", `Cartella local-bridge non trovata: ${workingDirectory}`);
+      throw new Error(`Cartella local-bridge non trovata: ${workingDirectory}`);
+    }
+
+    createManagedLogWriter(logFilePath).end();
     await runCommandWithLogging("local-bridge", ["run", "build"], workingDirectory, logFilePath);
 
     this.componentProcesses["local-bridge"].runProcess = this.spawnLongRunningCommand(
@@ -381,10 +511,15 @@ export class LocalOfficeAIRuntime {
   }
 
   private async startAddinWordDevServer(): Promise<void> {
-    const workingDirectory = join(this.repoRoot, "addin-word");
+    const workingDirectory = this.addinWordDir;
     const logFilePath = this.componentProcesses["addin-word"].logFilePath;
 
-    createLogStream(logFilePath).end();
+    if (!existsSync(workingDirectory)) {
+      this.logComponentMessage("addin-word", `Cartella addin-word non trovata: ${workingDirectory}`);
+      throw new Error(`Cartella addin-word non trovata: ${workingDirectory}`);
+    }
+
+    createManagedLogWriter(logFilePath).end();
     await runCommandWithLogging("addin-word", ["run", "build"], workingDirectory, logFilePath);
 
     this.componentProcesses["addin-word"].runProcess = this.spawnLongRunningCommand(
@@ -402,10 +537,10 @@ export class LocalOfficeAIRuntime {
     logFilePath: string
   ): ChildProcess {
     const commandToRun = createNpmCommand(args);
-    const logStream = createLogStream(logFilePath);
-    writeProcessBanner(logStream, `Componente: ${componentName}`);
-    writeProcessBanner(logStream, `CWD: ${workingDirectory}`);
-    writeProcessBanner(logStream, `Avvio processo persistente: ${commandToRun.displayCommand}`);
+    const logWriter = createManagedLogWriter(logFilePath);
+    logWriter.banner(`Componente: ${componentName}`);
+    logWriter.banner(`CWD: ${workingDirectory}`);
+    logWriter.banner(`Avvio processo persistente: ${commandToRun.displayCommand}`);
 
     const processHandle = spawn(commandToRun.command, commandToRun.args, {
       cwd: workingDirectory,
@@ -414,27 +549,27 @@ export class LocalOfficeAIRuntime {
       shell: false
     });
 
-    writeProcessBanner(logStream, `PID: ${String(processHandle.pid ?? "non disponibile")}`);
+    logWriter.banner(`PID: ${String(processHandle.pid ?? "non disponibile")}`);
 
-    processHandle.stdout?.on("data", (chunk) => logStream.write(chunk));
-    processHandle.stderr?.on("data", (chunk) => logStream.write(chunk));
+    processHandle.stdout?.on("data", (chunk) => logWriter.write(chunk));
+    processHandle.stderr?.on("data", (chunk) => logWriter.write(chunk));
 
     processHandle.once("error", (error) => {
-      writeProcessBanner(logStream, `Errore processo ${componentName}: ${String(error)}`);
+      logWriter.banner(`Errore processo ${componentName}: ${String(error)}`);
     });
 
     processHandle.once("exit", (code, signal) => {
-      writeProcessBanner(logStream, `Exit event - code: ${String(code)}, signal: ${String(signal)}`);
+      logWriter.banner(`Exit event - code: ${String(code)}, signal: ${String(signal)}`);
     });
 
     processHandle.once("close", (code, signal) => {
-      writeProcessBanner(logStream, `Close event - code: ${String(code)}, signal: ${String(signal)}`);
+      logWriter.banner(`Close event - code: ${String(code)}, signal: ${String(signal)}`);
 
       if (this.componentProcesses[componentName].runProcess === processHandle) {
         this.componentProcesses[componentName].runProcess = undefined;
       }
 
-      logStream.end();
+      logWriter.end();
     });
 
     return processHandle;

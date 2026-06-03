@@ -1,6 +1,6 @@
 # Desktop Tray
 
-La tray app introdotta in `v0.12.0` e ampliata in `v0.15.0` fornisce una prima base prudente per avvio locale e packaging portable di `LocalOfficeAI` su Windows.
+La tray app introdotta in `v0.12.0` e ampliata in `v0.15.2` fornisce una base prudente per avvio locale, packaging portable e primo uso su PC bersaglio di `LocalOfficeAI` su Windows.
 
 ## Obiettivo
 
@@ -17,6 +17,18 @@ La tray app non e' ancora un installer definitivo e non abilita l'avvio automati
 - Node.js e npm disponibili
 - Ollama installato e gia' avviato in locale su `http://localhost:11434`
 - sideload dell'add-in Word ancora necessario tramite `addin-word/manifest.xml`
+
+Controlli PowerShell consigliati:
+
+```powershell
+node --version
+npm --version
+ollama --version
+ollama list
+Test-NetConnection localhost -Port 11434
+Test-NetConnection localhost -Port 3210
+Test-NetConnection localhost -Port 3000
+```
 
 ## Cartella del progetto
 
@@ -45,6 +57,26 @@ npm run make
 - `npm run make` crea anche un artefatto ZIP Windows portable;
 - questa release non introduce aggiornamenti automatici o installer one-click.
 
+## Layout della release portable
+
+La release candidate `v0.15.2` e' pensata con questa struttura:
+
+- root pacchetto:
+  - `LEGGIMI_PRIMA.txt`
+  - `README.txt`
+  - `README.md`
+  - `manifest.xml`
+  - `Start-LocalOfficeAI.bat`
+  - `docs/`
+  - `tools/`
+  - `packages/`
+  - `portable/`
+- componenti Node:
+  - `packages/local-bridge`
+  - `packages/addin-word`
+- tray exe:
+  - `portable/localofficeai-desktop-tray-win32-x64/LocalOfficeAI Tray.exe`
+
 ## Comportamento attuale
 
 All'avvio:
@@ -53,6 +85,7 @@ All'avvio:
 - non apre una finestra principale;
 - crea una icona tray;
 - prova automaticamente ad avviare `local-bridge` e `addin-word` se non risultano gia' attivi;
+- riconosce sia il layout repository sia il layout portable della release candidate;
 - mostra un menu contestuale con:
   - stato locale;
   - avvio componenti;
@@ -73,6 +106,8 @@ La tray app mantiene file separati per:
 
 Durante `npm run start:self-check`, i log vanno in `desktop-tray/tmp-runtime-logs/`.
 
+Se Node.js o npm mancano sul PC bersaglio, la tray non dovrebbe andare in crash: lo stato resta non attivo e i log indicano il prerequisito mancante.
+
 ## Limiti attuali
 
 - non e' presente un installer definitivo;
@@ -81,6 +116,7 @@ Durante `npm run start:self-check`, i log vanno in `desktop-tray/tmp-runtime-log
 - l'avvio automatico riguarda solo i componenti quando la tray app viene aperta manualmente, non l'avvio della tray con Windows;
 - il controllo del dev-server dell'add-in resta prudente e basato sulla porta `3000`;
 - l'icona tray riusa temporaneamente un asset PNG esistente del progetto e non un `.ico` dedicato.
+- la prova finale su PC bersaglio resta manuale, soprattutto per Word e per il catalogo condiviso.
 
 ## Flusso invariato
 

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.15.0",
+    [string]$Version = "0.15.2",
     [string]$RepositoryRoot,
     [string]$OutputRoot,
     [switch]$SkipBuild
@@ -46,6 +46,14 @@ function Copy-Directory {
     Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Recurse -Force
 }
 
+function Remove-OptionalPath {
+    param([string]$TargetPath)
+
+    if (Test-Path -LiteralPath $TargetPath) {
+        Remove-Item -LiteralPath $TargetPath -Recurse -Force
+    }
+}
+
 $repoRoot = Resolve-RepositoryRoot -ConfiguredRoot $RepositoryRoot
 $releaseRoot = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     Join-Path $repoRoot "release_candidates"
@@ -55,6 +63,7 @@ $releaseRoot = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 
 $candidateRoot = Join-Path $releaseRoot "LocalOfficeAI-v$Version"
 $portableRoot = Join-Path $candidateRoot "portable"
+$packagesRoot = Join-Path $candidateRoot "packages"
 $docsRoot = Join-Path $candidateRoot "docs"
 $toolsRoot = Join-Path $candidateRoot "tools"
 
@@ -90,7 +99,7 @@ if (Test-Path -LiteralPath $candidateRoot) {
     Remove-Item -LiteralPath $candidateRoot -Recurse -Force
 }
 
-New-Item -ItemType Directory -Path $candidateRoot, $portableRoot, $docsRoot, $toolsRoot -Force | Out-Null
+New-Item -ItemType Directory -Path $candidateRoot, $portableRoot, $packagesRoot, $docsRoot, $toolsRoot -Force | Out-Null
 
 $packagedAppDirectory = Get-ChildItem -LiteralPath (Join-Path $desktopTrayRoot "out") -Directory |
     Where-Object { $_.Name -like "*win32*" } |
@@ -103,25 +112,30 @@ if ($null -eq $packagedAppDirectory) {
 $zipArtifacts = Get-ChildItem -LiteralPath (Join-Path $desktopTrayRoot "out\\make") -Filter *.zip -Recurse -ErrorAction SilentlyContinue
 
 Copy-Directory -SourcePath $packagedAppDirectory.FullName -DestinationPath $portableRoot
-Copy-Directory -SourcePath $localBridgeRoot -DestinationPath $portableRoot
-Copy-Directory -SourcePath $addinWordRoot -DestinationPath $portableRoot
+Copy-Directory -SourcePath $localBridgeRoot -DestinationPath $packagesRoot
+Copy-Directory -SourcePath $addinWordRoot -DestinationPath $packagesRoot
+Remove-OptionalPath -TargetPath (Join-Path $packagesRoot "local-bridge\\.local")
 
 Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $candidateRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\release-text\\LEGGIMI_PRIMA.txt") -Destination $candidateRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\release-text\\README.txt") -Destination $candidateRoot -Force
 Copy-Item -LiteralPath (Join-Path $addinWordRoot "manifest.xml") -Destination $candidateRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\desktop-tray.md") -Destination $docsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\INSTALL_WINDOWS.md") -Destination $docsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\WORD_SIDELOAD_WINDOWS.md") -Destination $docsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\FIRST_RUN_CHECKLIST.md") -Destination $docsRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\TROUBLESHOOTING_WINDOWS.md") -Destination $docsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Prepare-WordSideloadCatalog.ps1") -Destination $toolsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Prepare-LocalOfficeAI-ReleaseCandidate.ps1") -Destination $toolsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Start-LocalOfficeAI.ps1") -Destination $toolsRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Test-LocalOfficeAI-Prerequisites.ps1") -Destination $toolsRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "Start-LocalOfficeAI.bat") -Destination $candidateRoot -Force
 
 if ($zipArtifacts) {
-    $packagesRoot = Join-Path $candidateRoot "packages"
-    New-Item -ItemType Directory -Path $packagesRoot -Force | Out-Null
+    $packageArtifactsRoot = Join-Path $candidateRoot "packages\\artifacts"
+    New-Item -ItemType Directory -Path $packageArtifactsRoot -Force | Out-Null
     foreach ($zipArtifact in $zipArtifacts) {
-        Copy-Item -LiteralPath $zipArtifact.FullName -Destination $packagesRoot -Force
+        Copy-Item -LiteralPath $zipArtifact.FullName -Destination $packageArtifactsRoot -Force
     }
 }
 
