@@ -1,6 +1,6 @@
-# Installazione Windows di LocalOfficeAI v0.15.2
+# Installazione Windows di LocalOfficeAI v0.15.3
 
-Questa release irrobustisce la distribuzione alpha portable della tray app e la procedura guidata per Word su Windows.
+Questa release irrobustisce la distribuzione alpha portable della tray app, i launcher e la procedura guidata per Word su Windows.
 
 ## Nota sui marchi
 
@@ -8,18 +8,17 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-## Cosa include v0.15.2
+## Cosa include v0.15.3
 
 - tray app Electron per LocalOfficeAI;
 - packaging portable in formato cartella/ZIP, non ancora installer definitivo;
 - script di supporto per preparare il catalogo sideload di Word;
 - documentazione passo passo per utenti Windows non tecnici.
 
-Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.2`, che mette insieme:
+Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.3`, che mette insieme:
 
-- tray packaged;
-- `local-bridge`;
-- `addin-word`;
+- tray packaged in `portable`;
+- `local-bridge` e `addin-word` in `packages`;
 - documentazione;
 - script di supporto.
 
@@ -45,19 +44,23 @@ Test-NetConnection localhost -Port 3210
 Test-NetConnection localhost -Port 3000
 ```
 
-## Avvio della tray app
+## Flusso consigliato su PC bersaglio
 
 Se hai una release candidate locale preparata:
 
-1. Apri la cartella `portable`.
-2. Entra nella cartella del pacchetto tray Windows generato.
-3. Avvia `LocalOfficeAI Tray.exe`.
-4. Controlla che compaia l'icona LocalOfficeAI nell'area di notifica di Windows.
+1. Estrai completamente lo ZIP.
+2. Non avviare file direttamente dentro lo ZIP.
+3. Apri la cartella estratta.
+4. Esegui `01_Verifica_prerequisiti.bat`.
+5. Se i prerequisiti sono OK, esegui `02_Prepara_catalogo_Word.bat`.
+6. Segui le istruzioni per Word.
+7. Esegui `03_Avvia_LocalOfficeAI.bat` oppure `Start-LocalOfficeAI.bat`.
+8. Controlla che compaia l'icona LocalOfficeAI nell'area di notifica di Windows.
 
 Nota prudenziale:
 
 - il file ZIP generato da Electron Forge e' la base portable della sola tray app;
-- per un test locale completo di v0.15.2 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
+- per un test locale completo di v0.15.3 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
 
 Se stai lavorando dal repository:
 
@@ -66,7 +69,13 @@ Se stai lavorando dal repository:
 3. Esegui `npm run make` per creare il pacchetto ZIP portable.
 4. In alternativa, per sviluppo, esegui `npm run start`.
 
-Prima del primo avvio su PC bersaglio e' consigliato eseguire:
+Prima del primo avvio su PC bersaglio e' consigliato usare il wrapper:
+
+```powershell
+01_Verifica_prerequisiti.bat
+```
+
+Se vuoi eseguire manualmente lo script PowerShell, usa sempre:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1

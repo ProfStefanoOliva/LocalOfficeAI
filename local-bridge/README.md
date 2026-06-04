@@ -1,6 +1,6 @@
 # local-bridge
 
-Base tecnica minimale del servizio locale `LocalOfficeAI` per la release `v0.14.0`.
+Base tecnica minimale del servizio locale `LocalOfficeAI` per la release `v0.15.3`.
 
 In questa fase il bridge:
 
@@ -30,7 +30,7 @@ Il bridge resta comunque locale su `http://localhost:3210`.
 
 ## Configurazione endpoint AI locale
 
-La release `v0.14.0` introduce endpoint locali dedicati alla configurazione del backend AI:
+La release `v0.15.3` mantiene endpoint locali dedicati alla configurazione del backend AI:
 
 - `GET /settings/local-ai`
 - `POST /settings/local-ai`
@@ -66,7 +66,7 @@ Se non hai ancora configurato un endpoint salvato, puoi anche cambiare l'endpoin
 LOCALOFFICEAI_OLLAMA_URL=http://localhost:11434
 ```
 
-Questa variabile resta un fallback; la configurazione salvata localmente dal bridge ha priorita' operativa nella v0.14.0.
+Questa variabile resta un fallback; la configurazione salvata localmente dal bridge ha priorita' operativa nella v0.15.3.
 
 ## Installazione
 

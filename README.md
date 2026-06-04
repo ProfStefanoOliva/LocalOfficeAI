@@ -10,7 +10,7 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word è usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-Nella release `v0.15.2` LocalOfficeAI irrobustisce la distribuzione portable della tray app e la guida per il sideload di Word su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
+Nella release `v0.15.3` LocalOfficeAI irrobustisce launcher, script di preparazione Word e documentazione della distribuzione alpha portable su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
 
 ## Obiettivo iniziale
 
@@ -37,7 +37,7 @@ Per ridurre l'avvio manuale in piu' finestre PowerShell, e' disponibile un launc
 - script PowerShell versionato: `tools/Start-LocalOfficeAI.ps1`
 - wrapper di comodita': `Start-LocalOfficeAI.bat`
 
-Uso consigliato su Windows:
+Uso consigliato per sviluppatori dal repository:
 
 1. verifica che Ollama sia installato e gia' avviato localmente;
 2. dal repository, esegui `Start-LocalOfficeAI.bat`
@@ -56,9 +56,35 @@ Note importanti:
 - se l'endpoint AI locale configurato nel bridge non e' raggiungibile, il launcher o la tray mostreranno lo stato non attivo;
 - il flusso stabile resta invariato: anteprima locale -> copia negli appunti -> incolla manuale nel documento.
 
+## Flusso consigliato per utente finale
+
+Nella release portable `v0.15.3`, il flusso consigliato per un utente Windows non tecnico e':
+
+1. estrarre completamente lo ZIP;
+2. non avviare file direttamente dentro lo ZIP;
+3. aprire la cartella estratta;
+4. eseguire `01_Verifica_prerequisiti.bat`;
+5. se i prerequisiti sono OK, eseguire `02_Prepara_catalogo_Word.bat`;
+6. seguire le istruzioni per Word;
+7. eseguire `03_Avvia_LocalOfficeAI.bat` oppure `Start-LocalOfficeAI.bat`;
+8. verificare che l'icona tray compaia;
+9. aprire Word e caricare l'add-in.
+
+Se vuoi lanciare manualmente gli script PowerShell, usa sempre il formato con bypass esplicito, ad esempio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
+
+Evita invece l'avvio diretto di:
+
+```powershell
+.\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
+
 ## Guida Windows e Word
 
-Per la release `v0.15.2` sono disponibili guide dedicate:
+Per la release `v0.15.3` sono disponibili guide dedicate:
 
 - [Installazione Windows](docs/INSTALL_WINDOWS.md)
 - [Configurazione Word con cartella condivisa](docs/WORD_SIDELOAD_WINDOWS.md)
@@ -68,10 +94,10 @@ Per la release `v0.15.2` sono disponibili guide dedicate:
 
 ## Packaging tray
 
-Il packaging introdotto in `v0.15.2` e' prudente:
+Il packaging aggiornato in `v0.15.3` e' prudente:
 
 - produce una base portable della tray app;
-- la cartella `release_candidates/LocalOfficeAI-v0.15.2` resta il modo piu' semplice per una prova locale completa;
+- la cartella `release_candidates/LocalOfficeAI-v0.15.3` resta il modo piu' semplice per una prova locale completa;
 - puo' generare artefatti ZIP per Windows;
 - non crea ancora un installer definitivo one-click;
 - non abilita autostart con Windows;

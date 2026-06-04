@@ -1,6 +1,6 @@
 {
   "name": "localofficeai-word-addin",
-  "version": "0.14.0",
+  "version": "0.15.3",
   "private": true,
   "description": "Add-in Word locale di LocalOfficeAI con anteprima via local-bridge.",
   "scripts": {

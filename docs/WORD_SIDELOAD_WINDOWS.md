@@ -12,8 +12,9 @@ Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'a
 
 Metodo consigliato:
 
-1. Apri PowerShell nella root del progetto o della release candidate.
-2. Esegui:
+1. Apri la cartella estratta della release oppure la root del repository.
+2. Esegui `02_Prepara_catalogo_Word.bat`.
+3. In alternativa, se vuoi usare PowerShell manualmente, esegui:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\Prepare-WordSideloadCatalog.ps1
@@ -116,7 +117,7 @@ Test-NetConnection localhost -Port 3000
 ### Il manifest non e' visibile
 
 - verifica che nella cartella catalogo esista `manifest.xml`;
-- verifica che il file sia stato copiato dallo script;
+- verifica che il file sia stato copiato dallo script dalla root del pacchetto portable oppure dal percorso indicato con `-ManifestPath`;
 - riesegui `Prepare-WordSideloadCatalog.ps1` se necessario.
 
 ### Ollama non e' raggiungibile

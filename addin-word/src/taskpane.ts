@@ -343,7 +343,7 @@ function updateLocalStatusUi(): void {
   const provider = getAIProviderById(selectedAIProvider);
   providerStatusMessage.textContent =
     provider.id === "ollama-local"
-      ? "Ollama locale e' l'unico provider attivo nella v0.14.0. I provider cloud restano disabilitati."
+      ? "Ollama locale e' l'unico provider attivo nella v0.15.3. I provider cloud restano disabilitati."
       : `${provider.label} non e' ancora disponibile in questa release.`;
 
   if (!isBridgeReachable) {

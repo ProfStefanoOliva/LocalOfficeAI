@@ -1,4 +1,4 @@
-# Troubleshooting Windows - LocalOfficeAI v0.15.2
+# Troubleshooting Windows - LocalOfficeAI v0.15.3
 
 Questa guida raccoglie i controlli piu' utili per un PC bersaglio pulito.
 
@@ -44,17 +44,52 @@ Per questa alpha portable sono consigliati:
 
 ## Se Word non vede il catalogo
 
-- verifica di avere eseguito `tools\Prepare-WordSideloadCatalog.ps1`;
+- verifica di avere eseguito `02_Prepara_catalogo_Word.bat` oppure `powershell -ExecutionPolicy Bypass -File .\tools\Prepare-WordSideloadCatalog.ps1`;
 - verifica che `manifest.xml` sia presente nella cartella catalogo;
 - verifica il percorso condiviso configurato in Word;
 - chiudi e riapri Word.
 
 ## Se la tray non parte
 
-- esegui `tools\Test-LocalOfficeAI-Prerequisites.ps1`;
+- esegui `01_Verifica_prerequisiti.bat`;
 - verifica che `portable\localofficeai-desktop-tray-win32-x64\LocalOfficeAI Tray.exe` esista;
-- prova a eseguire `Start-LocalOfficeAI.bat`;
+- prova a eseguire `03_Avvia_LocalOfficeAI.bat` oppure `Start-LocalOfficeAI.bat`;
 - se necessario, apri la cartella log dalla tray quando disponibile.
+
+## Errore: l'esecuzione di script e' disabilitata
+
+Se Windows mostra un messaggio simile a `L'esecuzione di script e' disabilitata nel sistema in uso`, non lanciare direttamente un file `.ps1` con:
+
+```powershell
+.\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
+
+Usa invece uno dei wrapper `.bat` nella root del pacchetto, oppure lancia manualmente lo script cosi':
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1
+```
+
+Lo stesso approccio vale anche per `Prepare-WordSideloadCatalog.ps1` e gli altri script PowerShell inclusi nella release.
+
+## Errore: pwsh non riconosciuto
+
+Nella release `v0.15.3`, i launcher usano `powershell.exe` come fallback sicuro e non dipendono da `pwsh`.
+
+Se vedi ancora un vecchio messaggio `pwsh non e' riconosciuto`, assicurati di usare i file aggiornati `03_Avvia_LocalOfficeAI.bat` o `Start-LocalOfficeAI.bat` presenti nella release `v0.15.3`.
+
+## Manifest non trovato
+
+Nella release portable, il file `manifest.xml` deve stare nella root del pacchetto estratto.
+
+`Prepare-WordSideloadCatalog.ps1` in `v0.15.3` cerca il manifest in quest'ordine:
+
+1. percorso esplicito passato con `-ManifestPath`;
+2. `manifest.xml` nella root del pacchetto portable;
+3. `addin-word\manifest.xml` nel repository di sviluppo;
+4. `packages\addin-word\manifest.xml`, se presente.
+
+Non e' necessario copiare manualmente cartelle come `addin-word` nella root della release portable.
 
 ## Se compare un errore JavaScript Electron
 

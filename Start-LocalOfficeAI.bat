@@ -1,50 +1,51 @@
 @echo off
 setlocal
 
-set "SCRIPT_DIR=%~dp0"
-set "TRAY_EXE=%SCRIPT_DIR%portable\localofficeai-desktop-tray-win32-x64\LocalOfficeAI Tray.exe"
-set "PREREQ_SCRIPT=%SCRIPT_DIR%tools\Test-LocalOfficeAI-Prerequisites.ps1"
-set "REPO_LAUNCHER_PS1=%SCRIPT_DIR%tools\Start-LocalOfficeAI.ps1"
+for %%I in ("%~dp0.") do set "SCRIPT_DIR=%%~fI"
+cd /d "%SCRIPT_DIR%"
 
-echo [LocalOfficeAI] Avvio launcher...
+set "PORTABLE_WRAPPER=%SCRIPT_DIR%\03_Avvia_LocalOfficeAI.bat"
+set "REPO_LAUNCHER_PS1=%SCRIPT_DIR%\tools\Start-LocalOfficeAI.ps1"
+set "POWERSHELL_EXE="
 
-if exist "%TRAY_EXE%" (
-  echo [LocalOfficeAI] Modalita': release portable
-  echo [LocalOfficeAI] Eseguibile tray rilevato in:
-  echo [LocalOfficeAI]   %TRAY_EXE%
-  echo [LocalOfficeAI] Controllo prerequisiti consigliato prima dell'avvio.
-
-  if exist "%PREREQ_SCRIPT%" (
-    echo [LocalOfficeAI] Eseguo un controllo rapido non distruttivo dei prerequisiti...
-    where pwsh >nul 2>nul
-    if %ERRORLEVEL% EQU 0 (
-      pwsh -NoProfile -ExecutionPolicy Bypass -File "%PREREQ_SCRIPT%"
-    ) else (
-      powershell -NoProfile -ExecutionPolicy Bypass -File "%PREREQ_SCRIPT%"
-    )
-  ) else (
-    echo [LocalOfficeAI] Script prerequisiti non trovato. Continuo con l'avvio della tray.
-  )
-
-  echo [LocalOfficeAI] Avvio della tray portable...
-  set "LOCALOFFICEAI_ROOT=%SCRIPT_DIR%"
-  start "" "%TRAY_EXE%"
-  exit /b 0
-)
-
-if exist "%SCRIPT_DIR%addin-word" if exist "%SCRIPT_DIR%local-bridge" if exist "%SCRIPT_DIR%desktop-tray" (
-  echo [LocalOfficeAI] Modalita': repository di sviluppo
+where powershell.exe >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+  set "POWERSHELL_EXE=powershell.exe"
+) else (
   where pwsh >nul 2>nul
   if %ERRORLEVEL% EQU 0 (
-    pwsh -NoProfile -ExecutionPolicy Bypass -File "%REPO_LAUNCHER_PS1%" %*
-  ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_LAUNCHER_PS1%" %*
+    set "POWERSHELL_EXE=pwsh"
   )
+)
+
+echo [LocalOfficeAI] Avvio launcher...
+echo [LocalOfficeAI] Root rilevata: %SCRIPT_DIR%
+
+if exist "%SCRIPT_DIR%\manifest.xml" if exist "%SCRIPT_DIR%\portable" if exist "%SCRIPT_DIR%\packages" if exist "%SCRIPT_DIR%\tools" (
+  if exist "%PORTABLE_WRAPPER%" (
+    echo [LocalOfficeAI] Modalita': release portable
+    call "%PORTABLE_WRAPPER%" %*
+    exit /b %ERRORLEVEL%
+  )
+)
+
+if exist "%SCRIPT_DIR%\addin-word" if exist "%SCRIPT_DIR%\local-bridge" if exist "%SCRIPT_DIR%\desktop-tray" (
+  if not defined POWERSHELL_EXE (
+    echo [LocalOfficeAI] ERRORE: PowerShell non trovato. Serve powershell.exe oppure pwsh.
+    exit /b 1
+  )
+
+  echo [LocalOfficeAI] Modalita': repository di sviluppo
+  "%POWERSHELL_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%REPO_LAUNCHER_PS1%" %*
   exit /b %ERRORLEVEL%
 )
 
-echo [LocalOfficeAI] ERRORE: tray portable non trovata e layout repository non rilevato.
-echo [LocalOfficeAI] Verifica che la cartella contenga:
-echo [LocalOfficeAI]   portable\localofficeai-desktop-tray-win32-x64\LocalOfficeAI Tray.exe
-echo [LocalOfficeAI] oppure che tu stia eseguendo questo file dalla root del repository.
+echo [LocalOfficeAI] ERRORE: layout non riconosciuto.
+echo [LocalOfficeAI] Per la release portable servono almeno:
+echo [LocalOfficeAI]   manifest.xml
+echo [LocalOfficeAI]   packages\
+echo [LocalOfficeAI]   portable\
+echo [LocalOfficeAI]   tools\
+echo [LocalOfficeAI]   03_Avvia_LocalOfficeAI.bat
+echo [LocalOfficeAI] In alternativa esegui questo file dalla root del repository di sviluppo.
 exit /b 1

@@ -1,4 +1,4 @@
-LocalOfficeAI v0.15.2 - ALPHA PORTABLE
+LocalOfficeAI v0.15.3 - ALPHA PORTABLE
 ======================================
 
 IMPORTANTE:
@@ -16,26 +16,26 @@ PREREQUISITI MINIMI:
    - qwen2.5-coder:1.5b
    - qwen2.5-coder:3b
 
-COME VERIFICARE I PREREQUISITI:
-- Apri PowerShell
-- Esegui:
-  node --version
-  npm --version
-  ollama --version
-  ollama list
-  Test-NetConnection localhost -Port 11434
+FLUSSO CONSIGLIATO:
+1. Estrai completamente lo ZIP in una cartella normale.
+2. Non avviare file direttamente dentro lo ZIP.
+3. Apri la cartella estratta.
+4. Esegui:
+   01_Verifica_prerequisiti.bat
+5. Se i prerequisiti sono OK, esegui:
+   02_Prepara_catalogo_Word.bat
+6. Segui la guida mostrata per Word.
+7. Esegui:
+   03_Avvia_LocalOfficeAI.bat
+   oppure Start-LocalOfficeAI.bat
+8. Verifica che la tray compaia vicino all'orologio di Windows.
+9. Apri Word e carica l'add-in.
 
-FILE DA AVVIARE:
-- Start-LocalOfficeAI.bat
-
-CONTROLLO PREREQUISITI CONSIGLIATO:
-- tools\Test-LocalOfficeAI-Prerequisites.ps1
-
-COME PREPARARE WORD:
-1. Esegui:
-   tools\Prepare-WordSideloadCatalog.ps1
-2. Segui la guida dettagliata in:
-   docs\WORD_SIDELOAD_WINDOWS.md
+SE VUOI USARE POWERSHELL MANUALMENTE:
+- usa sempre:
+  powershell -ExecutionPolicy Bypass -File .\tools\Test-LocalOfficeAI-Prerequisites.ps1
+- non usare direttamente:
+  .\tools\Test-LocalOfficeAI-Prerequisites.ps1
 
 SE QUALCOSA NON PARTE:
 - Controlla:
