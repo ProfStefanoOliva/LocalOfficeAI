@@ -1,27 +1,56 @@
 [CmdletBinding()]
 param(
-    [string]$RepositoryRoot,
+    [Alias("RepositoryRoot")]
+    [string]$RootPath,
+    [string]$ManifestPath,
     [string]$CatalogPath
 )
 
 $ErrorActionPreference = "Stop"
 
-function Resolve-RepositoryRoot {
+function Resolve-LocalOfficeAIRoot {
     param([string]$ConfiguredRoot)
 
     if (-not [string]::IsNullOrWhiteSpace($ConfiguredRoot)) {
-        return (Resolve-Path -LiteralPath $ConfiguredRoot).Path
+        $normalizedRoot = [System.IO.Path]::GetFullPath($ConfiguredRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+        return (Resolve-Path -LiteralPath $normalizedRoot).Path
     }
 
     return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 }
 
-$repoRoot = Resolve-RepositoryRoot -ConfiguredRoot $RepositoryRoot
-$manifestSourcePath = Join-Path $repoRoot "addin-word\manifest.xml"
+function Resolve-ManifestSourcePath {
+    param(
+        [string]$BaseRoot,
+        [string]$ExplicitManifestPath
+    )
 
-if (-not (Test-Path -LiteralPath $manifestSourcePath)) {
-    throw "Manifest non trovato: $manifestSourcePath"
+    $candidatePaths = [System.Collections.Generic.List[string]]::new()
+
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitManifestPath)) {
+        $candidatePaths.Add([System.IO.Path]::GetFullPath($ExplicitManifestPath))
+    }
+
+    $candidatePaths.Add((Join-Path $BaseRoot "manifest.xml"))
+    $candidatePaths.Add((Join-Path $BaseRoot "addin-word\manifest.xml"))
+    $candidatePaths.Add((Join-Path $BaseRoot "packages\addin-word\manifest.xml"))
+
+    foreach ($candidatePath in $candidatePaths) {
+        if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+            return [pscustomobject]@{
+                Path          = (Resolve-Path -LiteralPath $candidatePath).Path
+                CandidateList = $candidatePaths
+            }
+        }
+    }
+
+    $checkedPaths = $candidatePaths | ForEach-Object { " - $_" }
+    throw "Manifest non trovato. Percorsi controllati:`n$($checkedPaths -join [Environment]::NewLine)"
 }
+
+$root = Resolve-LocalOfficeAIRoot -ConfiguredRoot $RootPath
+$manifestResolution = Resolve-ManifestSourcePath -BaseRoot $root -ExplicitManifestPath $ManifestPath
+$manifestSourcePath = $manifestResolution.Path
 
 if ([string]::IsNullOrWhiteSpace($CatalogPath)) {
     $documentsPath = [Environment]::GetFolderPath("MyDocuments")
@@ -38,6 +67,8 @@ $networkHint = "Non disponibile automaticamente. Se condividi la cartella manual
 
 Write-Host ""
 Write-Host "LocalOfficeAI - Catalogo sideload Word preparato" -ForegroundColor Green
+Write-Host "Root analizzata: $root"
+Write-Host "Manifest sorgente: $manifestSourcePath"
 Write-Host "Cartella catalogo: $resolvedCatalogPath"
 Write-Host "Manifest copiato in: $manifestDestinationPath"
 Write-Host "Percorso di rete: $networkHint"

@@ -1,14 +1,15 @@
-# First Run Checklist - LocalOfficeAI v0.15.2
+# First Run Checklist - LocalOfficeAI v0.15.3
 
 Usa questa checklist per il primo avvio su Windows.
 
 ## Prima di aprire Word
 
 - [ ] Ho letto `LEGGIMI_PRIMA.txt`.
-- [ ] Ho eseguito `tools\Test-LocalOfficeAI-Prerequisites.ps1`.
+- [ ] Ho eseguito `01_Verifica_prerequisiti.bat`.
 - [ ] Ollama e' installato.
 - [ ] Almeno un modello Ollama e' disponibile.
-- [ ] La tray app LocalOfficeAI e' stata avviata.
+- [ ] Ho estratto completamente lo ZIP e non sto eseguendo file al suo interno.
+- [ ] La tray app LocalOfficeAI e' stata avviata con `03_Avvia_LocalOfficeAI.bat` oppure `Start-LocalOfficeAI.bat`.
 - [ ] L'icona tray compare nell'area di notifica.
 - [ ] `local-bridge` risulta attivo.
 - [ ] `addin-word dev-server` risulta attivo.
@@ -16,7 +17,7 @@ Usa questa checklist per il primo avvio su Windows.
 
 ## Preparazione Word
 
-- [ ] La cartella catalogo Word e' stata preparata con `Prepare-WordSideloadCatalog.ps1`.
+- [ ] La cartella catalogo Word e' stata preparata con `02_Prepara_catalogo_Word.bat`.
 - [ ] La cartella catalogo e' stata condivisa, se necessario.
 - [ ] Il catalogo attendibile e' stato aggiunto in Word.
 - [ ] Word e' stato chiuso e riaperto dopo l'aggiunta del catalogo.

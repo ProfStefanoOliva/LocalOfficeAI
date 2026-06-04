@@ -9,7 +9,8 @@ function Resolve-LocalOfficeAIRoot {
     param([string]$ConfiguredRoot)
 
     if (-not [string]::IsNullOrWhiteSpace($ConfiguredRoot)) {
-        return (Resolve-Path -LiteralPath $ConfiguredRoot).Path
+        $normalizedRoot = [System.IO.Path]::GetFullPath($ConfiguredRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+        return (Resolve-Path -LiteralPath $normalizedRoot).Path
     }
 
     return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -70,6 +71,7 @@ $trayExePath = Join-Path $root "portable\localofficeai-desktop-tray-win32-x64\Lo
 $manifestPath = Join-Path $root "manifest.xml"
 $packagesPath = Join-Path $root "packages"
 $portablePath = Join-Path $root "portable"
+$toolsPath = Join-Path $root "tools"
 
 $summary = [System.Collections.Generic.List[string]]::new()
 $hasError = $false
@@ -149,6 +151,15 @@ if (Test-Path -LiteralPath $portablePath -PathType Container) {
     $hasError = $true
 }
 
+if (Test-Path -LiteralPath $toolsPath -PathType Container) {
+    Write-StatusLine -Level "OK" -Message "Cartella tools presente."
+    $summary.Add("tools OK")
+} else {
+    Write-StatusLine -Level "ERRORE" -Message "Cartella tools mancante."
+    $summary.Add("tools mancante")
+    $hasError = $true
+}
+
 if (Test-Path -LiteralPath $trayExePath) {
     Write-StatusLine -Level "OK" -Message "Tray executable trovato: $trayExePath"
     $summary.Add("tray exe OK")
@@ -175,9 +186,14 @@ Write-Host ""
 
 if ($hasError) {
     Write-StatusLine -Level "ERRORE" -Message "Almeno un prerequisito o file essenziale manca. Correggi i punti indicati prima di usare la tray."
-    Write-Host "Prossimo passo consigliato: apri LEGGIMI_PRIMA.txt oppure docs\\INSTALL_WINDOWS.md." -ForegroundColor Yellow
+    Write-Host "Se sei utente finale, apri LEGGIMI_PRIMA.txt oppure docs\\INSTALL_WINDOWS.md e usa i file .bat presenti nella root del pacchetto." -ForegroundColor Yellow
+    Write-Host "Se vuoi lanciare manualmente questo controllo da PowerShell, usa:" -ForegroundColor Yellow
+    Write-Host "  powershell -ExecutionPolicy Bypass -File .\\tools\\Test-LocalOfficeAI-Prerequisites.ps1" -ForegroundColor Yellow
     exit 1
 }
 
 Write-StatusLine -Level "OK" -Message "Controllo prerequisiti completato."
-Write-Host "Prossimo passo consigliato: esegui Start-LocalOfficeAI.bat e poi prepara Word con tools\\Prepare-WordSideloadCatalog.ps1." -ForegroundColor Green
+Write-Host "Utente finale: esegui 02_Prepara_catalogo_Word.bat, poi 03_Avvia_LocalOfficeAI.bat." -ForegroundColor Green
+Write-Host "Sviluppatore: puoi usare direttamente gli script PowerShell con ExecutionPolicy Bypass, per esempio:" -ForegroundColor Green
+Write-Host "  powershell -ExecutionPolicy Bypass -File .\\tools\\Prepare-WordSideloadCatalog.ps1" -ForegroundColor Green
+Write-Host "  powershell -ExecutionPolicy Bypass -File .\\tools\\Start-LocalOfficeAI.ps1" -ForegroundColor Green

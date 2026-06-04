@@ -1,6 +1,6 @@
 {
   "name": "localofficeai-desktop-tray",
-  "version": "0.15.2",
+  "version": "0.15.3",
   "private": true,
   "description": "Tray app Electron per l'avvio locale e il packaging portable di LocalOfficeAI su Windows.",
   "main": "dist/main.js",

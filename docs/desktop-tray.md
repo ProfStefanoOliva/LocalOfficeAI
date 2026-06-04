@@ -1,6 +1,6 @@
 # Desktop Tray
 
-La tray app introdotta in `v0.12.0` e ampliata in `v0.15.2` fornisce una base prudente per avvio locale, packaging portable e primo uso su PC bersaglio di `LocalOfficeAI` su Windows.
+La tray app introdotta in `v0.12.0` e ampliata in `v0.15.3` fornisce una base prudente per avvio locale, packaging portable e primo uso su PC bersaglio di `LocalOfficeAI` su Windows.
 
 ## Obiettivo
 
@@ -16,7 +16,7 @@ La tray app non e' ancora un installer definitivo e non abilita l'avvio automati
 - Windows
 - Node.js e npm disponibili
 - Ollama installato e gia' avviato in locale su `http://localhost:11434`
-- sideload dell'add-in Word ancora necessario tramite `addin-word/manifest.xml`
+- sideload dell'add-in Word ancora necessario tramite `manifest.xml` nella root della release portable oppure `addin-word/manifest.xml` nel repository
 
 Controlli PowerShell consigliati:
 
@@ -59,7 +59,7 @@ npm run make
 
 ## Layout della release portable
 
-La release candidate `v0.15.2` e' pensata con questa struttura:
+La release candidate `v0.15.3` e' pensata con questa struttura:
 
 - root pacchetto:
   - `LEGGIMI_PRIMA.txt`

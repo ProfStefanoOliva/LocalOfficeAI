@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.15.2",
+    [string]$Version = "0.15.3",
     [string]$RepositoryRoot,
     [string]$OutputRoot,
     [switch]$SkipBuild
@@ -12,7 +12,8 @@ function Resolve-RepositoryRoot {
     param([string]$ConfiguredRoot)
 
     if (-not [string]::IsNullOrWhiteSpace($ConfiguredRoot)) {
-        return (Resolve-Path -LiteralPath $ConfiguredRoot).Path
+        $normalizedRoot = [System.IO.Path]::GetFullPath($ConfiguredRoot).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+        return (Resolve-Path -LiteralPath $normalizedRoot).Path
     }
 
     return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -99,7 +100,7 @@ if (Test-Path -LiteralPath $candidateRoot) {
     Remove-Item -LiteralPath $candidateRoot -Recurse -Force
 }
 
-New-Item -ItemType Directory -Path $candidateRoot, $portableRoot, $packagesRoot, $docsRoot, $toolsRoot -Force | Out-Null
+New-Item -ItemType Directory -Path $candidateRoot, $portableRoot, $packagesRoot -Force | Out-Null
 
 $packagedAppDirectory = Get-ChildItem -LiteralPath (Join-Path $desktopTrayRoot "out") -Directory |
     Where-Object { $_.Name -like "*win32*" } |
@@ -120,16 +121,12 @@ Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $candidate
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\release-text\\LEGGIMI_PRIMA.txt") -Destination $candidateRoot -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\release-text\\README.txt") -Destination $candidateRoot -Force
 Copy-Item -LiteralPath (Join-Path $addinWordRoot "manifest.xml") -Destination $candidateRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\desktop-tray.md") -Destination $docsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\INSTALL_WINDOWS.md") -Destination $docsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\WORD_SIDELOAD_WINDOWS.md") -Destination $docsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\FIRST_RUN_CHECKLIST.md") -Destination $docsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "docs\\TROUBLESHOOTING_WINDOWS.md") -Destination $docsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Prepare-WordSideloadCatalog.ps1") -Destination $toolsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Prepare-LocalOfficeAI-ReleaseCandidate.ps1") -Destination $toolsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Start-LocalOfficeAI.ps1") -Destination $toolsRoot -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "tools\\Test-LocalOfficeAI-Prerequisites.ps1") -Destination $toolsRoot -Force
+Copy-Directory -SourcePath (Join-Path $repoRoot "docs") -DestinationPath $candidateRoot
+Copy-Directory -SourcePath (Join-Path $repoRoot "tools") -DestinationPath $candidateRoot
 Copy-Item -LiteralPath (Join-Path $repoRoot "Start-LocalOfficeAI.bat") -Destination $candidateRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "01_Verifica_prerequisiti.bat") -Destination $candidateRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "02_Prepara_catalogo_Word.bat") -Destination $candidateRoot -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "03_Avvia_LocalOfficeAI.bat") -Destination $candidateRoot -Force
 
 if ($zipArtifacts) {
     $packageArtifactsRoot = Join-Path $candidateRoot "packages\\artifacts"
