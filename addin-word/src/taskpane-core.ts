@@ -30,6 +30,23 @@ export type QuickPromptTemplate = {
   promptText: string;
 };
 
+export type AssistedSessionRole = "user" | "assistant";
+
+export type AssistedSessionMessage = {
+  role: AssistedSessionRole;
+  content: string;
+};
+
+export type AssistedSessionState = {
+  baseText: string;
+  messages: AssistedSessionMessage[];
+};
+
+export type BuildAssistedSessionPromptOptions = {
+  maxHistoryMessages?: number;
+  maxHistoryCharacters?: number;
+};
+
 export type StoredPreferences = {
   theme?: unknown;
   writingProfile?: unknown;
@@ -62,7 +79,7 @@ export const aiProviderDefinitions: AIProviderDefinition[] = [
     label: "Ollama locale",
     availability: "active",
     transport: "local",
-    description: "Provider locale attivo nella v0.13.0 tramite local-bridge e Ollama su localhost."
+    description: "Provider locale attivo tramite local-bridge e Ollama su localhost."
   },
   {
     id: "openai-compatible",
@@ -264,6 +281,168 @@ export function createViewState(activeView: TaskpaneViewName): Record<TaskpaneVi
     settings: activeView === "settings",
     info: activeView === "info"
   };
+}
+
+export function createAssistedSessionState(baseText: string): AssistedSessionState {
+  return {
+    baseText: baseText.trim(),
+    messages: []
+  };
+}
+
+export function clearAssistedSessionState(): null {
+  return null;
+}
+
+export function appendAssistedSessionMessage(
+  session: AssistedSessionState,
+  message: AssistedSessionMessage
+): AssistedSessionState {
+  const content = message.content.trim();
+
+  if (content.length === 0) {
+    return session;
+  }
+
+  return {
+    baseText: session.baseText,
+    messages: [
+      ...session.messages,
+      {
+        role: message.role,
+        content
+      }
+    ]
+  };
+}
+
+function formatAssistedSessionHistory(
+  messages: AssistedSessionMessage[],
+  maxHistoryMessages: number,
+  maxHistoryCharacters: number
+): string {
+  const recentMessages = messages.slice(Math.max(0, messages.length - maxHistoryMessages));
+  const lines: string[] = [];
+  let usedCharacters = 0;
+
+  for (const message of recentMessages) {
+    const label = message.role === "user" ? "Utente" : "Assistente";
+    const content = message.content.trim();
+    const remainingCharacters = maxHistoryCharacters - usedCharacters;
+
+    if (content.length === 0 || remainingCharacters <= 0) {
+      break;
+    }
+
+    const formattedLine = `${label}: ${content}`;
+    const clippedLine =
+      formattedLine.length > remainingCharacters
+        ? `${formattedLine.slice(0, Math.max(0, remainingCharacters - 15)).trimEnd()} [tagliato]`
+        : formattedLine;
+
+    lines.push(clippedLine);
+    usedCharacters += clippedLine.length + 1;
+  }
+
+  return lines.join("\n");
+}
+
+export function isDirectTextEditingRequest(userPrompt: string): boolean {
+  const normalizedPrompt = userPrompt
+    .toLocaleLowerCase("it-IT")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return [
+    "correggi",
+    "correggere",
+    "correzione",
+    "errori",
+    "errore",
+    "ortografic",
+    "refus",
+    "grammatica",
+    "punteggiatura",
+    "migliora",
+    "migliorare",
+    "riscrivi",
+    "riscrivere",
+    "revisione",
+    "revisiona",
+    "rendilo piu formale",
+    "rendi piu formale",
+    "piu formale",
+    "sintetizza",
+    "riassumi",
+    "analizza"
+  ].some((marker) => normalizedPrompt.includes(marker));
+}
+
+export function buildAssistedSessionPrompt(
+  profileId: WritingProfileId,
+  baseText: string,
+  userPrompt: string,
+  history: AssistedSessionMessage[] = [],
+  options: BuildAssistedSessionPromptOptions = {}
+): string {
+  const profile = writingProfiles[profileId];
+  const profileInstructions = profile.instructions.map((instruction) => `- ${instruction}`).join("\n");
+  const trimmedBaseText = baseText.trim();
+  const trimmedUserPrompt = userPrompt.trim();
+  const maxHistoryMessages = options.maxHistoryMessages ?? 8;
+  const maxHistoryCharacters = options.maxHistoryCharacters ?? 2400;
+  const formattedHistory = formatAssistedSessionHistory(history, maxHistoryMessages, maxHistoryCharacters);
+  const editingInstructions = isDirectTextEditingRequest(trimmedUserPrompt)
+    ? [
+        "",
+        "ISTRUZIONI SPECIALI PER QUESTA RICHIESTA:",
+        "- La richiesta corrente chiede di elaborare direttamente il TESTO BASE DELLA SESSIONE.",
+        "- Produci prima di tutto il testo corretto, riscritto, migliorato, riassunto o analizzato richiesto.",
+        "- Se la richiesta chiede correzioni, restituisci direttamente il testo corretto completo.",
+        "- Non chiedere esempi, frasi o parti da correggere: il testo da elaborare e' gia' nel TESTO BASE DELLA SESSIONE.",
+        "- Puoi aggiungere una breve nota sulle correzioni solo dopo il testo elaborato.",
+        "- Non proporre correzioni di parole assenti dal testo base, salvo refusi chiaramente presenti nel testo base."
+      ]
+    : [];
+
+  return [
+    "RUOLO:",
+    "Sei LocalOfficeAI in modalita' Sessione assistita. Devi aiutare l'utente mantenendo come contesto stabile lo snapshot del testo selezionato all'avvio della sessione.",
+    "",
+    `Profilo di scrittura: ${profile.label}`,
+    "Istruzioni del profilo:",
+    profileInstructions,
+    "",
+    "TESTO BASE DELLA SESSIONE - FONTE PRIMARIA DA ELABORARE:",
+    "<<<",
+    trimmedBaseText,
+    ">>>",
+    "",
+    "CRONOLOGIA PRECEDENTE - SOLO CONTESTO CONVERSAZIONALE, NON FONTE PRIMARIA:",
+    "<<<",
+    formattedHistory.length > 0 ? formattedHistory : "Nessuna cronologia precedente.",
+    ">>>",
+    "",
+    "RICHIESTA CORRENTE DELL'UTENTE - PRIORITARIA SULLA CRONOLOGIA:",
+    "<<<",
+    trimmedUserPrompt,
+    ">>>",
+    "",
+    "ISTRUZIONI:",
+    "- Usa il TESTO BASE DELLA SESSIONE come contenuto principale da correggere, analizzare, riscrivere, migliorare o riassumere.",
+    "- La RICHIESTA CORRENTE DELL'UTENTE ha priorita' sulla CRONOLOGIA PRECEDENTE.",
+    "- La CRONOLOGIA PRECEDENTE serve solo per capire il dialogo, non per sostituire o modificare il testo base.",
+    "- Non confondere la cronologia con il TESTO BASE DELLA SESSIONE.",
+    "- Se la richiesta chiede correzione, revisione, riscrittura, miglioramento, sintesi o analisi, produci un risultato concreto prima di tutto.",
+    "- Non chiedere all'utente di fornire il testo se il TESTO BASE DELLA SESSIONE e' presente.",
+    "- Chiedi chiarimenti solo se la richiesta e' impossibile o realmente ambigua nonostante il testo base.",
+    "- Non inventare contenuti non presenti quando il compito richiede solo correzione, revisione, analisi, sintesi o riscrittura del testo base.",
+    "- Non inserire automaticamente nulla nel documento Word: restituisci una risposta copiabile manualmente dall'utente.",
+    ...editingInstructions,
+    "",
+    "OUTPUT RICHIESTO:",
+    "Rispondi alla richiesta corrente restando riferito al TESTO BASE DELLA SESSIONE. Produci una risposta utile e copiabile manualmente."
+  ].join("\n");
 }
 
 export function buildPrompt(profileId: WritingProfileId, userPrompt: string, selectedText: string): string {

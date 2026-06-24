@@ -1,7 +1,11 @@
 import {
+  appendAssistedSessionMessage,
   aiProviderDefinitions,
+  buildAssistedSessionPrompt,
   buildPrompt,
   chooseOllamaModel,
+  clearAssistedSessionState,
+  createAssistedSessionState,
   createViewState,
   defaultAIProviderId,
   defaultThemePreference,
@@ -9,6 +13,7 @@ import {
   normalizeStoredPreferences,
   quickPromptTemplates,
   type AIProviderId,
+  type AssistedSessionState,
   type QuickPromptId,
   type StoredPreferences,
   type TaskpaneViewName,
@@ -100,6 +105,14 @@ const generatePreviewButton = getRequiredElement("generate-preview-button", HTML
 const previewStatusMessage = getRequiredElement("preview-status-message", HTMLParagraphElement);
 const previewOutput = getRequiredElement("preview-output", HTMLPreElement);
 const copyPreviewButton = getRequiredElement("copy-preview-button", HTMLButtonElement);
+const assistedSessionStatus = getRequiredElement("assisted-session-status", HTMLParagraphElement);
+const assistedSessionBase = getRequiredElement("assisted-session-base", HTMLPreElement);
+const assistedSessionHistory = getRequiredElement("assisted-session-history", HTMLDivElement);
+const assistedSessionPromptInput = getRequiredElement("assisted-session-prompt", HTMLTextAreaElement);
+const startAssistedSessionButton = getRequiredElement("start-assisted-session-button", HTMLButtonElement);
+const newAssistedSessionButton = getRequiredElement("new-assisted-session-button", HTMLButtonElement);
+const sendAssistedSessionButton = getRequiredElement("send-assisted-session-button", HTMLButtonElement);
+const clearAssistedSessionButton = getRequiredElement("clear-assisted-session-button", HTMLButtonElement);
 const localAIEndpointInput = getRequiredElement("local-ai-endpoint", HTMLInputElement);
 const saveLocalAIEndpointButton = getRequiredElement("save-local-ai-endpoint-button", HTMLButtonElement);
 const resetLocalAIEndpointButton = getRequiredElement("reset-local-ai-endpoint-button", HTMLButtonElement);
@@ -108,6 +121,7 @@ const localAIPrivacyWarning = getRequiredElement("local-ai-privacy-warning", HTM
 
 let cachedSelectionText = "";
 let cachedPreviewText = "";
+let assistedSession: AssistedSessionState | null = null;
 let isBridgeReachable = false;
 let isOllamaReachable = false;
 let availableOllamaModels: string[] = [];
@@ -162,11 +176,114 @@ function updateCopyPreviewButtonState(): void {
 
 function updateClearSelectionButtonState(): void {
   clearSelectionButton.disabled = cachedSelectionText.trim().length === 0;
+  updateAssistedSessionControls();
 }
 
 function clearStoredSelection(): void {
   cachedSelectionText = "";
   showMessage("Nessun testo selezionato. Puoi scrivere una richiesta libera oppure leggere una nuova selezione.");
+}
+
+function getAssistedSessionMessageCount(): number {
+  return assistedSession?.messages.length ?? 0;
+}
+
+function summarizeSessionBaseText(baseText: string): string {
+  const normalizedText = baseText.trim();
+  const maxPreviewCharacters = 700;
+
+  if (normalizedText.length <= maxPreviewCharacters) {
+    return normalizedText;
+  }
+
+  return `${normalizedText.slice(0, maxPreviewCharacters).trimEnd()}\n[... testo base abbreviato nel pannello ...]`;
+}
+
+function renderAssistedSession(): void {
+  const currentSession = assistedSession;
+  const hasActiveSession = currentSession !== null;
+  const messageCount = currentSession?.messages.length ?? 0;
+
+  assistedSessionStatus.textContent = hasActiveSession
+    ? `Sessione attiva su testo selezionato. Messaggi in memoria: ${messageCount}.`
+    : "Nessuna sessione attiva. Leggi una selezione e avvia una sessione assistita.";
+
+  assistedSessionBase.hidden = !hasActiveSession;
+  assistedSessionBase.textContent = currentSession ? summarizeSessionBaseText(currentSession.baseText) : "";
+  assistedSessionHistory.innerHTML = "";
+
+  if (!currentSession || currentSession.messages.length === 0) {
+    const emptyMessage = document.createElement("p");
+    emptyMessage.className = "taskpane__status taskpane__status--compact";
+    emptyMessage.textContent = hasActiveSession
+      ? "La cronologia della sessione e' vuota. Scrivi una richiesta per iniziare."
+      : "La cronologia resta solo in memoria e verra' persa se il task pane viene ricaricato.";
+    assistedSessionHistory.appendChild(emptyMessage);
+    updateAssistedSessionControls();
+    return;
+  }
+
+  for (const [index, message] of currentSession.messages.entries()) {
+    const messageItem = document.createElement("article");
+    messageItem.className = "taskpane__session-message";
+    messageItem.dataset.role = message.role;
+
+    const messageLabel = document.createElement("span");
+    messageLabel.className = "taskpane__session-message-label";
+    messageLabel.textContent = message.role === "user" ? "Utente" : "Assistente";
+    messageItem.appendChild(messageLabel);
+
+    const messageContent = document.createElement("p");
+    messageContent.className = "taskpane__session-message-content";
+    messageContent.textContent = message.content;
+    messageItem.appendChild(messageContent);
+
+    if (message.role === "assistant") {
+      const copyButton = document.createElement("button");
+      copyButton.className = "taskpane__mini-button taskpane__session-copy-button";
+      copyButton.type = "button";
+      copyButton.textContent = "Copia risposta";
+      copyButton.addEventListener("click", () => {
+        void copyAssistedSessionResponse(index);
+      });
+      messageItem.appendChild(copyButton);
+    }
+
+    assistedSessionHistory.appendChild(messageItem);
+  }
+
+  updateAssistedSessionControls();
+}
+
+function updateAssistedSessionControls(): void {
+  const hasSelectionText = cachedSelectionText.trim().length > 0;
+  const hasActiveSession = assistedSession !== null;
+
+  startAssistedSessionButton.disabled = !hasSelectionText;
+  newAssistedSessionButton.disabled = !hasSelectionText;
+  sendAssistedSessionButton.disabled = !hasActiveSession;
+  clearAssistedSessionButton.disabled = !hasActiveSession;
+  assistedSessionPromptInput.disabled = !hasActiveSession;
+}
+
+function startAssistedSessionFromCachedSelection(): void {
+  const baseText = cachedSelectionText.trim();
+
+  if (baseText.length === 0) {
+    assistedSessionStatus.textContent = "Seleziona testo nel documento e premi Leggi selezione prima di avviare la sessione.";
+    return;
+  }
+
+  assistedSession = createAssistedSessionState(baseText);
+  assistedSessionPromptInput.value = "";
+  renderAssistedSession();
+  assistedSessionPromptInput.focus();
+}
+
+function clearAssistedSession(): void {
+  assistedSession = clearAssistedSessionState();
+  assistedSessionPromptInput.value = "";
+  renderAssistedSession();
 }
 
 function readStoredPreferences(): StoredPreferences {
@@ -343,7 +460,7 @@ function updateLocalStatusUi(): void {
   const provider = getAIProviderById(selectedAIProvider);
   providerStatusMessage.textContent =
     provider.id === "ollama-local"
-      ? "Ollama locale e' l'unico provider attivo nella v0.15.3. I provider cloud restano disabilitati."
+      ? "Ollama locale e' l'unico provider attivo nella v0.16.0. I provider cloud restano disabilitati."
       : `${provider.label} non e' ancora disponibile in questa release.`;
 
   if (!isBridgeReachable) {
@@ -620,6 +737,30 @@ async function copyGeneratedPreview(): Promise<void> {
   }
 }
 
+async function copyAssistedSessionResponse(messageIndex: number): Promise<void> {
+  const message = assistedSession?.messages[messageIndex];
+
+  if (!message || message.role !== "assistant" || message.content.trim().length === 0) {
+    assistedSessionStatus.textContent = "Nessuna risposta valida da copiare.";
+    return;
+  }
+
+  try {
+    await copyPreviewWithClipboardApi(message.content);
+    assistedSessionStatus.textContent = "Risposta copiata negli appunti. Incollala manualmente nel documento se vuoi usarla.";
+  } catch (clipboardError) {
+    console.warn("Copia risposta tramite navigator.clipboard non riuscita, provo il fallback execCommand.", clipboardError);
+
+    try {
+      copyPreviewWithExecCommand(message.content);
+      assistedSessionStatus.textContent = "Risposta copiata negli appunti. Incollala manualmente nel documento se vuoi usarla.";
+    } catch (fallbackError) {
+      console.error("Copia della risposta assistita non riuscita.", fallbackError);
+      assistedSessionStatus.textContent = "Impossibile copiare la risposta. Selezionala manualmente e copiala.";
+    }
+  }
+}
+
 async function readCurrentSelection(): Promise<void> {
   showMessage("Lettura della selezione in corso...");
 
@@ -729,6 +870,108 @@ async function generatePreview(): Promise<void> {
   }
 }
 
+async function sendAssistedSessionMessage(): Promise<void> {
+  const userPrompt = assistedSessionPromptInput.value.trim();
+  const selectedProfileId = getSelectedWritingProfileId();
+
+  if (assistedSession === null) {
+    assistedSessionStatus.textContent = "Avvia prima una sessione assistita da una selezione letta.";
+    return;
+  }
+
+  if (selectedAIProvider !== "ollama-local") {
+    assistedSessionStatus.textContent = "Il provider selezionato non e' ancora disponibile. Usa Ollama locale nelle impostazioni.";
+    return;
+  }
+
+  if (userPrompt.length === 0) {
+    assistedSessionStatus.textContent = "Scrivi una richiesta per continuare la sessione assistita.";
+    return;
+  }
+
+  if (!isBridgeReachable) {
+    assistedSessionStatus.textContent = "Il local-bridge non e' raggiungibile. Premi Aggiorna stato e verifica che il servizio sia avviato.";
+    return;
+  }
+
+  if (!isOllamaReachable) {
+    assistedSessionStatus.textContent = "Ollama non e' raggiungibile. Premi Aggiorna stato e verifica che il servizio sia attivo.";
+    return;
+  }
+
+  if (availableOllamaModels.length === 0 && selectedOllamaModel.trim().length === 0) {
+    assistedSessionStatus.textContent = "Nessun modello Ollama disponibile. Premi Aggiorna stato e verifica i modelli installati.";
+    return;
+  }
+
+  sendAssistedSessionButton.disabled = true;
+  assistedSessionStatus.textContent = "Invio richiesta della sessione assistita in corso...";
+
+  const sessionBeforeRequest = assistedSession;
+  const bridgePrompt = buildAssistedSessionPrompt(
+    selectedProfileId,
+    sessionBeforeRequest.baseText,
+    userPrompt,
+    sessionBeforeRequest.messages
+  );
+
+  try {
+    const response = await fetch(bridgeGenerateUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt: bridgePrompt,
+        ...(selectedOllamaModel.trim().length > 0 ? { model: selectedOllamaModel } : {})
+      })
+    });
+
+    const data = (await response.json()) as {
+      error?: unknown;
+      response?: unknown;
+    };
+
+    if (!response.ok) {
+      const message =
+        typeof data.error === "string"
+          ? data.error
+          : "Errore locale durante la generazione della risposta assistita.";
+      assistedSessionStatus.textContent = getUserFacingBridgeError(message);
+      updateAssistedSessionControls();
+      return;
+    }
+
+    if (typeof data.response !== "string") {
+      assistedSessionStatus.textContent = "Il local-bridge ha risposto senza un contenuto valido per la sessione.";
+      updateAssistedSessionControls();
+      return;
+    }
+
+    if (assistedSession !== sessionBeforeRequest) {
+      assistedSessionStatus.textContent =
+        "La sessione e' cambiata mentre la risposta era in corso. La risposta ricevuta e' stata ignorata.";
+      updateAssistedSessionControls();
+      return;
+    }
+
+    assistedSession = appendAssistedSessionMessage(sessionBeforeRequest, {
+      role: "user",
+      content: userPrompt
+    });
+    assistedSession = appendAssistedSessionMessage(assistedSession, {
+      role: "assistant",
+      content: data.response
+    });
+    assistedSessionPromptInput.value = "";
+    renderAssistedSession();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+    assistedSessionStatus.textContent = getUserFacingBridgeError(message);
+    updateAssistedSessionControls();
+  }
+}
+
 Office.onReady((info) => {
   if (info.host !== Office.HostType.Word) {
     showMessage("Questo add-in è disponibile solo in Microsoft Word.");
@@ -823,6 +1066,22 @@ Office.onReady((info) => {
     void copyGeneratedPreview();
   });
 
+  startAssistedSessionButton.addEventListener("click", () => {
+    startAssistedSessionFromCachedSelection();
+  });
+
+  newAssistedSessionButton.addEventListener("click", () => {
+    startAssistedSessionFromCachedSelection();
+  });
+
+  sendAssistedSessionButton.addEventListener("click", () => {
+    void sendAssistedSessionMessage();
+  });
+
+  clearAssistedSessionButton.addEventListener("click", () => {
+    clearAssistedSession();
+  });
+
   for (const button of quickPromptButtons) {
     button.addEventListener("click", () => {
       const promptId = button.dataset.quickPrompt as QuickPromptId | undefined;
@@ -840,6 +1099,7 @@ Office.onReady((info) => {
   updateLocalStatusUi();
   updateClearSelectionButtonState();
   updateCopyPreviewButtonState();
+  renderAssistedSession();
   updateProviderSummary();
   showView("main");
   void refreshLocalStatus();

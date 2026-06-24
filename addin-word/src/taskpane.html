@@ -13,7 +13,7 @@
       <header class="taskpane__header">
         <div class="taskpane__header-top">
           <div>
-            <p class="taskpane__eyebrow">Word Add-in v0.15.3</p>
+            <p class="taskpane__eyebrow">Word Add-in v0.16.0</p>
             <h1>LocalOfficeAI</h1>
           </div>
           <div class="taskpane__header-actions">
@@ -122,6 +122,44 @@
             Copia anteprima
           </button>
         </section>
+
+        <section class="taskpane__panel" aria-live="polite">
+          <div class="taskpane__section-header taskpane__section-header--stacked">
+            <div>
+              <span class="taskpane__label taskpane__label--compact">Modalita' dialogica sperimentale</span>
+              <h2>Sessione assistita</h2>
+            </div>
+            <button id="clear-assisted-session-button" class="taskpane__mini-button" type="button" disabled>
+              Cancella sessione
+            </button>
+          </div>
+          <p id="assisted-session-status" class="taskpane__status">
+            Nessuna sessione attiva. Leggi una selezione e avvia una sessione assistita.
+          </p>
+          <p class="taskpane__hint">
+            La sessione usa uno snapshot del testo letto. Se cambi selezione in Word, avvia una nuova sessione dalla selezione corrente.
+          </p>
+          <div class="taskpane__inline-actions">
+            <button id="start-assisted-session-button" class="taskpane__mini-button" type="button" disabled>
+              Avvia sessione assistita
+            </button>
+            <button id="new-assisted-session-button" class="taskpane__mini-button" type="button" disabled>
+              Nuova sessione dalla selezione corrente
+            </button>
+          </div>
+          <span class="taskpane__label taskpane__label--compact">Testo base della sessione</span>
+          <pre id="assisted-session-base" class="taskpane__selection taskpane__session-base" hidden></pre>
+          <div id="assisted-session-history" class="taskpane__session-history"></div>
+          <label class="taskpane__label" for="assisted-session-prompt">Richiesta nella sessione</label>
+          <textarea
+            id="assisted-session-prompt"
+            class="taskpane__textarea"
+            rows="4"
+            placeholder="Per esempio: spiegami il secondo paragrafo oppure proponi una versione piu' chiara."
+            disabled
+          ></textarea>
+          <button id="send-assisted-session-button" type="button" disabled>Invia nella sessione assistita</button>
+        </section>
       </div>
 
       <section id="settings-view" class="taskpane__view taskpane-view is-hidden" hidden aria-hidden="true">
@@ -148,7 +186,7 @@
             <option value="deepseek-compatible" disabled>DeepSeek e compatibili (futuro)</option>
           </select>
           <p id="provider-status-message" class="taskpane__hint">
-            Ollama locale e' l'unico provider attivo nella v0.15.3. I provider cloud restano disabilitati.
+            Ollama locale e' l'unico provider attivo nella v0.16.0. I provider cloud restano disabilitati.
           </p>
 
           <label class="taskpane__label" for="local-ai-endpoint">Endpoint AI locale / Ollama</label>
@@ -217,7 +255,7 @@
             Con Ollama locale il testo viene inviato solo al local-bridge locale e a Ollama configurato su <code>localhost</code>.
           </p>
           <p class="taskpane__status">
-            I provider cloud futuri potranno inviare testo a servizi esterni solo dopo una scelta esplicita dell'utente. Nella v0.15.3 non vengono introdotte chiamate cloud.
+                I provider cloud futuri potranno inviare testo a servizi esterni solo dopo una scelta esplicita dell'utente. Nella v0.16.0 non vengono introdotte chiamate cloud.
           </p>
         </section>
       </section>
@@ -235,7 +273,7 @@
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Versione</span>
-              <p>v0.15.3</p>
+              <p>v0.16.0</p>
             </div>
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Descrizione</span>
@@ -247,6 +285,7 @@
             <div class="taskpane__info-item">
               <span class="taskpane__info-label">Ultimi aggiornamenti</span>
               <ul class="taskpane__info-updates">
+                <li>v0.16.0: sessione assistita sperimentale legata allo snapshot del testo selezionato, con cronologia solo in memoria e risposte copiabili manualmente.</li>
                 <li>v0.15.3: launcher portable piu' robusti, preparazione Word allineata alla release e documentazione di primo avvio aggiornata.</li>
                 <li>v0.14.0: endpoint AI locale configurabile, avviso privacy per endpoint LAN e stato aggiornato sul bridge.</li>
                 <li>v0.13.0: base provider AI multipli, stato locale spostato in Impostazioni, Ollama locale confermato come unico provider attivo.</li>
@@ -271,7 +310,7 @@
               <span class="taskpane__info-label">Privacy</span>
               <p>
                 LocalOfficeAI lavora in locale. Il testo viene inviato solo al local-bridge configurato su
-                <code>localhost</code> e non a servizi cloud. I provider cloud futuri non sono attivi nella v0.15.3.
+                <code>localhost</code> e non a servizi cloud. I provider cloud futuri non sono attivi nella v0.16.0.
               </p>
             </div>
             <div class="taskpane__info-item">

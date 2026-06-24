@@ -10,7 +10,7 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word è usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-Nella release `v0.15.3` LocalOfficeAI irrobustisce launcher, script di preparazione Word e documentazione della distribuzione alpha portable su Windows. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
+Nella release `v0.16.0` LocalOfficeAI introduce una prima `Sessione assistita` sperimentale legata al testo selezionato. Il flusso stabile `Anteprima singola` resta invariato: risultato locale, copia negli appunti e incolla manuale nel documento. L'endpoint AI locale resta configurabile, ma il `local-bridge` rimane su `http://localhost:3210`.
 
 ## Obiettivo iniziale
 
@@ -56,9 +56,24 @@ Note importanti:
 - se l'endpoint AI locale configurato nel bridge non e' raggiungibile, il launcher o la tray mostreranno lo stato non attivo;
 - il flusso stabile resta invariato: anteprima locale -> copia negli appunti -> incolla manuale nel documento.
 
+## Anteprima singola e Sessione assistita
+
+LocalOfficeAI offre due modalita' locali distinte:
+
+- `Anteprima singola`: modalita' rapida e orientata al risultato. Usa il testo letto o una richiesta libera, genera una sola risposta tramite `local-bridge` e lascia all'utente la copia manuale.
+- `Sessione assistita`: modalita' sperimentale/alpha centrata sul testo selezionato. Dopo `Leggi selezione`, l'utente avvia esplicitamente una sessione; il task pane salva solo in memoria uno snapshot del testo selezionato e interpreta le richieste successive rispetto a quello snapshot.
+
+Nella sessione assistita lo snapshot e' il riferimento operativo principale. Se l'utente chiede correzioni, riscritture, miglioramenti, riassunti o analisi, LocalOfficeAI deve usare il testo base gia' presente e produrre direttamente il testo elaborato, senza chiedere all'utente di fornire esempi o ripetere il testo.
+
+Se il testo nel documento cambia, la sessione non cambia automaticamente. Per aggiornare il testo base bisogna premere `Leggi selezione` sulla nuova selezione e poi `Nuova sessione dalla selezione corrente`.
+
+La cronologia della sessione contiene messaggi utente e risposte assistente, ma resta solo in memoria nel task pane: non viene salvata in file, `localStorage`, IndexedDB o altri storage persistenti, e puo' andare persa ricaricando il pannello.
+
+Nessuna modalita' inserisce testo automaticamente nel documento Word. Le risposte restano copiabili manualmente dall'utente.
+
 ## Flusso consigliato per utente finale
 
-Nella release portable `v0.15.3`, il flusso consigliato per un utente Windows non tecnico e':
+Nella release portable `v0.16.0`, il flusso consigliato per un utente Windows non tecnico resta:
 
 1. estrarre completamente lo ZIP;
 2. non avviare file direttamente dentro lo ZIP;
@@ -84,7 +99,7 @@ Evita invece l'avvio diretto di:
 
 ## Guida Windows e Word
 
-Per la release `v0.15.3` sono disponibili guide dedicate:
+Per la release `v0.16.0` sono disponibili guide dedicate:
 
 - [Installazione Windows](docs/INSTALL_WINDOWS.md)
 - [Configurazione Word con cartella condivisa](docs/WORD_SIDELOAD_WINDOWS.md)
@@ -94,10 +109,10 @@ Per la release `v0.15.3` sono disponibili guide dedicate:
 
 ## Packaging tray
 
-Il packaging aggiornato in `v0.15.3` e' prudente:
+Il packaging ereditato da `v0.15.3` resta prudente:
 
 - produce una base portable della tray app;
-- la cartella `release_candidates/LocalOfficeAI-v0.15.3` resta il modo piu' semplice per una prova locale completa;
+- la cartella `release_candidates/LocalOfficeAI-v0.15.3` resta il riferimento gia' preparato per la prova portable precedente;
 - puo' generare artefatti ZIP per Windows;
 - non crea ancora un installer definitivo one-click;
 - non abilita autostart con Windows;
