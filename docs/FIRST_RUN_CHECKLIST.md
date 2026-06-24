@@ -1,4 +1,4 @@
-# First Run Checklist - LocalOfficeAI v0.15.3
+# First Run Checklist - LocalOfficeAI v0.16.0
 
 Usa questa checklist per il primo avvio su Windows.
 
@@ -36,6 +36,15 @@ Usa questa checklist per il primo avvio su Windows.
 - [ ] Verifica che l'anteprima compaia.
 - [ ] Copia l'anteprima negli appunti.
 - [ ] Incolla manualmente nel documento.
+
+## Primo test Sessione assistita
+
+- [ ] Seleziona un breve testo.
+- [ ] Premi `Leggi selezione`.
+- [ ] Premi `Avvia sessione assistita`.
+- [ ] Fai una richiesta successiva sullo stesso testo, per esempio `Correggi eventuali errori`.
+- [ ] Verifica che la risposta sia riferita allo stesso testo base.
+- [ ] Copia manualmente la risposta se vuoi usarla nel documento.
 
 ## Se qualcosa non funziona
 

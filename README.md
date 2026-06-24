@@ -109,10 +109,10 @@ Per la release `v0.16.0` sono disponibili guide dedicate:
 
 ## Packaging tray
 
-Il packaging ereditato da `v0.15.3` resta prudente:
+Il packaging portable di `v0.16.0` resta prudente:
 
 - produce una base portable della tray app;
-- la cartella `release_candidates/LocalOfficeAI-v0.15.3` resta il riferimento gia' preparato per la prova portable precedente;
+- la cartella `release_candidates/LocalOfficeAI-v0.16.0` e' il riferimento corrente per la prova portable locale;
 - puo' generare artefatti ZIP per Windows;
 - non crea ancora un installer definitivo one-click;
 - non abilita autostart con Windows;

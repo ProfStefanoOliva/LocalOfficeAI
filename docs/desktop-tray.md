@@ -59,7 +59,7 @@ npm run make
 
 ## Layout della release portable
 
-La release candidate `v0.15.3` e' pensata con questa struttura:
+La release candidate `v0.16.0` e' pensata con questa struttura:
 
 - root pacchetto:
   - `LEGGIMI_PRIMA.txt`

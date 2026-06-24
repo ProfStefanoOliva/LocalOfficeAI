@@ -7,7 +7,7 @@ cd /d "%PACKAGE_ROOT%"
 set "CATALOG_SCRIPT=%PACKAGE_ROOT%\tools\Prepare-WordSideloadCatalog.ps1"
 set "EXIT_CODE=0"
 
-echo [LocalOfficeAI] Preparazione catalogo Word della release portable v0.15.3
+echo [LocalOfficeAI] Preparazione catalogo Word della release portable v0.16.0
 echo [LocalOfficeAI] Root del pacchetto: %PACKAGE_ROOT%
 echo.
 

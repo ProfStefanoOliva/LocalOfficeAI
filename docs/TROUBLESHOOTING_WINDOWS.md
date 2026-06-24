@@ -1,4 +1,4 @@
-# Troubleshooting Windows - LocalOfficeAI v0.15.3
+# Troubleshooting Windows - LocalOfficeAI v0.16.0
 
 Questa guida raccoglie i controlli piu' utili per un PC bersaglio pulito.
 
@@ -74,15 +74,15 @@ Lo stesso approccio vale anche per `Prepare-WordSideloadCatalog.ps1` e gli altri
 
 ## Errore: pwsh non riconosciuto
 
-Nella release `v0.15.3`, i launcher usano `powershell.exe` come fallback sicuro e non dipendono da `pwsh`.
+Nella release `v0.16.0`, i launcher usano `powershell.exe` come fallback sicuro e non dipendono da `pwsh`.
 
-Se vedi ancora un vecchio messaggio `pwsh non e' riconosciuto`, assicurati di usare i file aggiornati `03_Avvia_LocalOfficeAI.bat` o `Start-LocalOfficeAI.bat` presenti nella release `v0.15.3`.
+Se vedi ancora un vecchio messaggio `pwsh non e' riconosciuto`, assicurati di usare i file aggiornati `03_Avvia_LocalOfficeAI.bat` o `Start-LocalOfficeAI.bat` presenti nella release `v0.16.0`.
 
 ## Manifest non trovato
 
 Nella release portable, il file `manifest.xml` deve stare nella root del pacchetto estratto.
 
-`Prepare-WordSideloadCatalog.ps1` in `v0.15.3` cerca il manifest in quest'ordine:
+`Prepare-WordSideloadCatalog.ps1` in `v0.16.0` cerca il manifest in quest'ordine:
 
 1. percorso esplicito passato con `-ManifestPath`;
 2. `manifest.xml` nella root del pacchetto portable;

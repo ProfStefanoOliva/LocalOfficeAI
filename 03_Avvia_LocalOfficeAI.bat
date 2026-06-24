@@ -9,7 +9,7 @@ set "PREREQ_SCRIPT=%PACKAGE_ROOT%\tools\Test-LocalOfficeAI-Prerequisites.ps1"
 set "POWERSHELL_EXE="
 set "EXIT_CODE=0"
 
-echo [LocalOfficeAI] Avvio release portable v0.15.3
+echo [LocalOfficeAI] Avvio release portable v0.16.0
 echo [LocalOfficeAI] Root del pacchetto: %PACKAGE_ROOT%
 echo.
 

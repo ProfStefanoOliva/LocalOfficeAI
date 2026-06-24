@@ -1,4 +1,4 @@
-LocalOfficeAI v0.15.3 - ALPHA PORTABLE
+LocalOfficeAI v0.16.0 - ALPHA PORTABLE
 ======================================
 
 IMPORTANTE:
@@ -54,3 +54,9 @@ NOTA:
 Il documento Word non viene modificato direttamente.
 Il flusso resta:
 anteprima -> copia negli appunti -> incolla manuale
+
+SESSIONE ASSISTITA:
+- La nuova modalita' Sessione assistita usa uno snapshot del testo selezionato.
+- Dopo avere letto la selezione, puoi avviare una sessione e fare richieste successive sullo stesso testo.
+- Le risposte della sessione vanno copiate manualmente, come le anteprime.
+- La cronologia della sessione resta solo in memoria nel task pane e puo' andare persa ricaricandolo.

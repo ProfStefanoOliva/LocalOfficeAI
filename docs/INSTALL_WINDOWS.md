@@ -1,6 +1,6 @@
-# Installazione Windows di LocalOfficeAI v0.15.3
+# Installazione Windows di LocalOfficeAI v0.16.0
 
-Questa release irrobustisce la distribuzione alpha portable della tray app, i launcher e la procedura guidata per Word su Windows.
+Questa release mantiene la distribuzione alpha portable della tray app e aggiunge la prima Sessione assistita nel task pane Word.
 
 ## Nota sui marchi
 
@@ -8,14 +8,15 @@ Microsoft Word, Microsoft Office, Microsoft 365 e Windows sono marchi di Microso
 
 Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'add-in.
 
-## Cosa include v0.15.3
+## Cosa include v0.16.0
 
 - tray app Electron per LocalOfficeAI;
 - packaging portable in formato cartella/ZIP, non ancora installer definitivo;
 - script di supporto per preparare il catalogo sideload di Word;
-- documentazione passo passo per utenti Windows non tecnici.
+- documentazione passo passo per utenti Windows non tecnici;
+- Sessione assistita sperimentale basata su uno snapshot del testo selezionato.
 
-Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.15.3`, che mette insieme:
+Per questa release, il percorso piu' semplice da provare e' la cartella `release_candidates/LocalOfficeAI-v0.16.0`, che mette insieme:
 
 - tray packaged in `portable`;
 - `local-bridge` e `addin-word` in `packages`;
@@ -60,7 +61,7 @@ Se hai una release candidate locale preparata:
 Nota prudenziale:
 
 - il file ZIP generato da Electron Forge e' la base portable della sola tray app;
-- per un test locale completo di v0.15.3 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
+- per un test locale completo di v0.16.0 e' preferibile usare la release candidate locale preparata, che include anche i componenti Node necessari.
 
 Se stai lavorando dal repository:
 

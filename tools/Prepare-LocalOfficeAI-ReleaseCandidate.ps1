@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.15.3",
+    [string]$Version,
     [string]$RepositoryRoot,
     [string]$OutputRoot,
     [switch]$SkipBuild
@@ -55,7 +55,37 @@ function Remove-OptionalPath {
     }
 }
 
+function Resolve-ReleaseVersion {
+    param(
+        [string]$ConfiguredVersion,
+        [string]$ResolvedRepositoryRoot
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ConfiguredVersion)) {
+        return $ConfiguredVersion.Trim()
+    }
+
+    $packageJsonPath = Join-Path $ResolvedRepositoryRoot "desktop-tray\package.json"
+
+    if (-not (Test-Path -LiteralPath $packageJsonPath)) {
+        throw "Versione release non determinabile: file non trovato $packageJsonPath. Passa -Version oppure verifica desktop-tray\package.json."
+    }
+
+    try {
+        $packageJson = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json
+    } catch {
+        throw "Versione release non determinabile: impossibile leggere $packageJsonPath. Dettagli: $($_.Exception.Message)"
+    }
+
+    if ($null -eq $packageJson.version -or [string]::IsNullOrWhiteSpace([string]$packageJson.version)) {
+        throw "Versione release non determinabile: campo version mancante o vuoto in $packageJsonPath. Passa -Version."
+    }
+
+    return ([string]$packageJson.version).Trim()
+}
+
 $repoRoot = Resolve-RepositoryRoot -ConfiguredRoot $RepositoryRoot
+$Version = Resolve-ReleaseVersion -ConfiguredVersion $Version -ResolvedRepositoryRoot $repoRoot
 $releaseRoot = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     Join-Path $repoRoot "release_candidates"
 } else {
@@ -137,7 +167,7 @@ if ($zipArtifacts) {
 }
 
 Write-Host ""
-Write-Host "Release candidate locale preparata in: $candidateRoot" -ForegroundColor Green
+Write-Host "Release candidate locale LocalOfficeAI v$Version preparata in: $candidateRoot" -ForegroundColor Green
 Write-Host "Portable root: $portableRoot"
 Write-Host "Documentazione: $docsRoot"
 Write-Host "Script supporto: $toolsRoot"

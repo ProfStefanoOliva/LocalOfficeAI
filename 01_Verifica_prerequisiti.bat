@@ -7,7 +7,7 @@ cd /d "%PACKAGE_ROOT%"
 set "PREREQ_SCRIPT=%PACKAGE_ROOT%\tools\Test-LocalOfficeAI-Prerequisites.ps1"
 set "EXIT_CODE=0"
 
-echo [LocalOfficeAI] Verifica prerequisiti della release portable v0.15.3
+echo [LocalOfficeAI] Verifica prerequisiti della release portable v0.16.0
 echo [LocalOfficeAI] Root del pacchetto: %PACKAGE_ROOT%
 echo.
 
