@@ -1,6 +1,6 @@
 # addin-word
 
-Base tecnica minimale dell'add-in Word di LocalOfficeAI per la release `v0.14.0`, resa avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama, con profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, endpoint AI locale configurabile, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e una prima base prudente di test automatici sulla logica consolidata.
+Add-in Word di LocalOfficeAI per la release `v0.16.0`, avviabile in locale per lo sviluppo, capace di mostrare un'anteprima generata tramite local-bridge e Ollama e di avviare una prima `Sessione assistita` sperimentale legata allo snapshot del testo selezionato. Restano presenti profili di scrittura controllati, prompt rapidi, stato locale del bridge/Ollama nelle impostazioni, scelta del provider AI, endpoint AI locale configurabile, scelta del modello, impostazioni locali, vista informazioni, copia negli appunti per l'inserimento manuale nel documento e test automatici sulla logica consolidata.
 
 ## Nota sui marchi
 
@@ -24,6 +24,12 @@ Il riferimento a Word e' usato solo per descrivere l'ambiente di utilizzo dell'a
 - pulsante `Genera anteprima`;
 - anteprima generata localmente tramite `http://localhost:3210/ollama/generate`;
 - pulsante `Copia anteprima`;
+- sezione `Sessione assistita` distinta dall'anteprima singola;
+- pulsante `Avvia sessione assistita` per fissare in memoria lo snapshot del testo selezionato;
+- pulsante `Nuova sessione dalla selezione corrente` per aggiornare esplicitamente il testo base;
+- cronologia in memoria con messaggi utente e risposte assistente;
+- pulsante `Copia risposta` su ogni risposta assistente;
+- pulsante `Cancella sessione`;
 - copia dell'anteprima negli appunti solo dopo clic esplicito dell'utente;
 - incolla manuale del risultato nel documento nel punto desiderato;
 - nessuna modifica automatica o distruttiva del documento;
@@ -53,6 +59,29 @@ I prompt rapidi compilano il campo della richiesta con un testo iniziale coerent
 
 LocalOfficeAI genera anteprime singole orientate al risultato e non e' ancora una chat multi-turno: i prompt sono quindi costruiti per chiedere direttamente un output finale, evitando domande di chiarimento quando il testo disponibile consente una migliore ipotesi prudente.
 
+## Sessione assistita
+
+La `Sessione assistita` di `v0.16.0` e' una modalita' dialogica sperimentale/alpha distinta da `Genera anteprima`.
+
+Funziona cosi':
+
+1. l'utente seleziona testo in Word;
+2. preme `Leggi selezione`;
+3. preme `Avvia sessione assistita`;
+4. il task pane salva solo in memoria uno snapshot del testo letto;
+5. ogni richiesta inviata nella sessione viene interpretata rispetto a quello snapshot;
+6. la risposta resta nel task pane e puo' essere copiata con `Copia risposta`.
+
+Se l'utente cambia selezione o modifica il documento, la sessione attiva non cambia automaticamente. Per aggiornare il testo base bisogna leggere la nuova selezione e premere `Nuova sessione dalla selezione corrente`.
+
+La cronologia della sessione resta solo in memoria nel task pane: non viene salvata in `localStorage`, `sessionStorage`, IndexedDB, file o storage del bridge. Se il task pane viene ricaricato, la sessione puo' andare persa.
+
+La sessione assistita usa lo stesso endpoint locale `POST /ollama/generate` gia' usato dall'anteprima. Non introduce nuovi endpoint, persistenza lato server, API key o chiamate cloud.
+
+Quando la richiesta chiede correzione, revisione, riscrittura, miglioramento, sintesi o analisi, il prompt della sessione considera il testo base come fonte primaria e chiede un risultato concreto prima di tutto. La sessione puo' restare dialogica, ma non deve chiedere all'utente di fornire il testo quando lo snapshot e' gia' disponibile.
+
+`Genera anteprima` resta la modalita' rapida, singola e orientata al risultato: il relativo prompt continua a chiedere di non fare domande inutili. Nella `Sessione assistita`, invece, una domanda di chiarimento e' accettabile solo quando e' davvero necessaria per evitare una risposta fuorviante.
+
 ## Impostazioni e informazioni
 
 - `⚙️ Impostazioni`: apre una vista interna al task pane che contiene:
@@ -68,7 +97,7 @@ LocalOfficeAI genera anteprime singole orientate al risultato e non e' ancora un
 
 ## Provider AI
 
-La release `v0.13.0` introduce una prima base prudente per provider multipli:
+La base provider multipli resta prudente:
 
 - `Ollama locale`: unico provider attivo e realmente operativo;
 - `OpenAI-compatible`: placeholder futuro, disabilitato;
@@ -83,7 +112,7 @@ In questa release:
 
 ## Endpoint AI locale configurabile
 
-La release `v0.14.0` permette di configurare in `⚙️ Impostazioni` l'endpoint AI locale usato dal `local-bridge`.
+L'endpoint AI locale usato dal `local-bridge` si configura in `⚙️ Impostazioni`.
 
 Valore predefinito:
 
@@ -116,9 +145,11 @@ La build genera i file statici in `dist/`.
 
 ## Test automatici
 
-Per la release `v0.10.0` e' disponibile una base prudente di test automatici per la logica pura del task pane:
+E' disponibile una base prudente di test automatici per la logica pura del task pane:
 
 - builder dei prompt;
+- prompt della sessione assistita;
+- stato puro della sessione assistita;
 - prompt rapidi;
 - normalizzazione preferenze locali;
 - selezione logica della vista attiva.
@@ -149,7 +180,7 @@ Il server serve i file generati in `dist/` e usa HTTPS, in coerenza con `manifes
 
 Se `dist/` non esiste ancora, esegui prima `npm run build`.
 
-## Prerequisiti per provare la v0.14.0
+## Prerequisiti per provare la v0.16.0
 
 Per la prova completa servono tutti questi elementi locali:
 
@@ -203,9 +234,15 @@ Procedura generale consigliata per test locali:
 23. verifica che il pulsante `Copia anteprima` si abiliti solo dopo una generazione valida;
 24. premi `Copia anteprima`;
 25. verifica il messaggio di conferma della copia;
-26. incolla manualmente il testo nel documento Word nel punto desiderato.
+26. incolla manualmente il testo nel documento Word nel punto desiderato;
+27. per provare la sessione assistita, mantieni o rileggi una selezione e premi `Avvia sessione assistita`;
+28. scrivi una richiesta nella sezione `Sessione assistita` e premi `Invia nella sessione assistita`;
+29. verifica che la cronologia mostri messaggio utente e risposta assistente;
+30. usa `Copia risposta` per copiare manualmente una risposta;
+31. cambia selezione in Word e verifica che la sessione non cambi finche' non premi `Nuova sessione dalla selezione corrente`;
+32. usa `Cancella sessione` per rimuovere la cronologia in memoria.
 
-La v0.10.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
+La v0.16.0 mantiene il flusso non distruttivo introdotto in v0.5.0: dopo avere generato l'anteprima o una risposta assistita, l'utente la copia negli appunti dal task pane e la incolla manualmente dove preferisce.
 
 LocalOfficeAI puo' lavorare in due modalita':
 
@@ -215,6 +252,8 @@ LocalOfficeAI puo' lavorare in due modalita':
 I prompt rapidi funzionano in entrambe le modalita': sia con testo selezionato sia come richiesta libera senza testo selezionato.
 
 `Cancella selezione` rimuove solo il testo memorizzato nel pannello e non modifica in alcun modo il documento Word.
+
+`Cancella sessione` rimuove solo la cronologia e lo snapshot della sessione assistita in memoria.
 
 Se `local-bridge` non e' raggiungibile oppure Ollama non e' attivo, il task pane mostra uno stato chiaro e blocca la generazione dell'anteprima finche' il problema non viene risolto.
 
@@ -238,11 +277,14 @@ Se Word segnala problemi di sicurezza del contenuto locale, verifica che il cert
 - il task pane interroga `GET /health`, `GET /ollama/health` e `GET /ollama/models` dalla vista `Impostazioni` per mostrare lo stato locale;
 - il task pane usa anche `GET /settings/local-ai`, `POST /settings/local-ai` e `POST /settings/local-ai/reset` per leggere e salvare l'endpoint AI locale tramite il bridge;
 - il profilo di scrittura viene tradotto in istruzioni di prompt lato task pane prima della chiamata al bridge;
+- la sessione assistita costruisce un prompt lato task pane con testo base, profilo, richiesta corrente e breve cronologia precedente;
 - il modello selezionato viene inviato a `POST /ollama/generate` quando disponibile;
 - tema, provider, profilo e modello selezionato vengono salvati come preferenze locali del task pane;
 - l'endpoint AI locale non viene salvato nel task pane: la persistenza e' gestita dal `local-bridge`;
+- la cronologia della sessione assistita non viene salvata nel task pane, nel bridge o su disco;
 - i provider cloud futuri sono mostrati solo come placeholder disabilitati;
 - la copia negli appunti avviene solo dopo clic esplicito su `Copia anteprima`;
+- la copia delle risposte assistite avviene solo dopo clic esplicito su `Copia risposta`;
 - l'utente incolla manualmente il risultato nel documento Word;
 - la sostituzione della selezione non e' ancora implementata;
 - il sideload può variare leggermente in base alla versione di Word o al canale Microsoft 365 in uso;

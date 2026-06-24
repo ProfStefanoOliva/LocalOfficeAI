@@ -13,7 +13,7 @@ import {
 } from "./localAiSettings.js";
 
 const serviceName = "LocalOfficeAI Local Bridge";
-const serviceVersion = "0.14.0";
+const serviceVersion = "0.16.0";
 const port = 3210;
 const allowedOrigin = "https://localhost:3000";
 

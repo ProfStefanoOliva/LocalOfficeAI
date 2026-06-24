@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
 
 import {
+  appendAssistedSessionMessage,
   aiProviderDefinitions,
+  buildAssistedSessionPrompt,
   buildPrompt,
   chooseOllamaModel,
+  clearAssistedSessionState,
+  createAssistedSessionState,
   createViewState,
   defaultAIProviderId,
   defaultThemePreference,
   defaultWritingProfileId,
   getAIProviderById,
+  isDirectTextEditingRequest,
   normalizeStoredPreferences,
   quickPromptTemplates,
   writingProfiles
@@ -53,6 +58,184 @@ test("buildPrompt resta coerente anche con richiesta utente vuota", () => {
   assert.match(prompt, /Profilo di scrittura: Tecnico/);
   assert.match(prompt, /Richiesta dell'utente:\n\s*\nTesto di partenza:/);
   assert.doesNotMatch(prompt, /undefined|null/);
+});
+
+test("buildAssistedSessionPrompt crea un prompt con testo base della sessione", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "neutro",
+    "Questo e' lo snapshot selezionato.",
+    "Spiega il passaggio centrale."
+  );
+
+  assert.match(prompt, /modalita' Sessione assistita/);
+  assert.match(prompt, /TESTO BASE DELLA SESSIONE - FONTE PRIMARIA DA ELABORARE:\n<<<\nQuesto e' lo snapshot selezionato\.\n>>>/);
+  assert.match(prompt, /RICHIESTA CORRENTE DELL'UTENTE - PRIORITARIA SULLA CRONOLOGIA:\n<<<\nSpiega il passaggio centrale\.\n>>>/);
+  assert.match(prompt, /Usa il TESTO BASE DELLA SESSIONE come contenuto principale/);
+});
+
+test("la sessione assistita mantiene lo stesso testo base nelle richieste successive", () => {
+  let session = createAssistedSessionState("Snapshot iniziale della selezione.");
+  session = appendAssistedSessionMessage(session, {
+    role: "user",
+    content: "Riassumi il testo."
+  });
+  session = appendAssistedSessionMessage(session, {
+    role: "assistant",
+    content: "Riassunto basato sullo snapshot iniziale."
+  });
+
+  const prompt = buildAssistedSessionPrompt(
+    "formale",
+    session.baseText,
+    "Ora rendilo piu' istituzionale.",
+    session.messages
+  );
+
+  assert.match(prompt, /TESTO BASE DELLA SESSIONE - FONTE PRIMARIA DA ELABORARE:\n<<<\nSnapshot iniziale della selezione\.\n>>>/);
+  assert.match(prompt, /Utente: Riassumi il testo\./);
+  assert.match(prompt, /Assistente: Riassunto basato sullo snapshot iniziale\./);
+  assert.doesNotMatch(prompt, /selezione corrente nel documento/i);
+});
+
+test("buildAssistedSessionPrompt include solo una cronologia breve quando richiesto", () => {
+  const history = [
+    { role: "user", content: "Prima domanda molto lunga ".repeat(20) },
+    { role: "assistant", content: "Prima risposta molto lunga ".repeat(20) },
+    { role: "user", content: "Seconda domanda importante." },
+    { role: "assistant", content: "Seconda risposta importante." }
+  ];
+  const prompt = buildAssistedSessionPrompt(
+    "didattico",
+    "Base stabile.",
+    "Continua.",
+    history,
+    {
+      maxHistoryMessages: 2,
+      maxHistoryCharacters: 120
+    }
+  );
+
+  assert.doesNotMatch(prompt, /Prima domanda/);
+  assert.doesNotMatch(prompt, /Prima risposta/);
+  assert.match(prompt, /Utente: Seconda domanda importante\./);
+  assert.match(prompt, /Assistente: Seconda risposta importante\./);
+});
+
+test("buildAssistedSessionPrompt taglia una cronologia troppo lunga", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "tecnico",
+    "Base stabile.",
+    "Rispondi.",
+    [{ role: "user", content: "contenuto molto lungo ".repeat(80) }],
+    {
+      maxHistoryMessages: 4,
+      maxHistoryCharacters: 90
+    }
+  );
+
+  assert.match(prompt, /\[tagliato\]/);
+  const historySection = prompt
+    .split("CRONOLOGIA PRECEDENTE - SOLO CONTESTO CONVERSAZIONALE, NON FONTE PRIMARIA:\n<<<\n")[1]
+    .split("\n>>>\n\nRICHIESTA CORRENTE")[0];
+  assert.ok(historySection.length <= 100);
+});
+
+test("buildAssistedSessionPrompt delimita chiaramente testo base, cronologia e richiesta corrente", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "neutro",
+    "Questo e' un testo di prova.",
+    "Correggi gli errori.",
+    [{ role: "assistant", content: "Messaggio precedente." }]
+  );
+
+  assert.match(prompt, /TESTO BASE DELLA SESSIONE - FONTE PRIMARIA DA ELABORARE:\n<<<\nQuesto e' un testo di prova\.\n>>>/);
+  assert.match(prompt, /CRONOLOGIA PRECEDENTE - SOLO CONTESTO CONVERSAZIONALE, NON FONTE PRIMARIA:\n<<<\nAssistente: Messaggio precedente\.\n>>>/);
+  assert.match(prompt, /RICHIESTA CORRENTE DELL'UTENTE - PRIORITARIA SULLA CRONOLOGIA:\n<<<\nCorreggi gli errori\.\n>>>/);
+});
+
+test("buildAssistedSessionPrompt tratta la cronologia come contesto e non come fonte primaria", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "neutro",
+    "Testo base stabile.",
+    "Ora correggilo.",
+    [{ role: "user", content: "Prima parlavamo di un testo diverso." }]
+  );
+
+  assert.match(prompt, /CRONOLOGIA PRECEDENTE - SOLO CONTESTO CONVERSAZIONALE, NON FONTE PRIMARIA/);
+  assert.match(prompt, /La RICHIESTA CORRENTE DELL'UTENTE ha priorita' sulla CRONOLOGIA PRECEDENTE/);
+  assert.match(prompt, /La CRONOLOGIA PRECEDENTE serve solo per capire il dialogo, non per sostituire o modificare il testo base/);
+  assert.match(prompt, /Non confondere la cronologia con il TESTO BASE DELLA SESSIONE/);
+});
+
+test("isDirectTextEditingRequest riconosce richieste di correzione e riscrittura senza classificatori complessi", () => {
+  assert.equal(isDirectTextEditingRequest("Devi correggere eventuali errori presenti all'interno del testo"), true);
+  assert.equal(isDirectTextEditingRequest("All'interno del testo ci sono errori ortografici, correggili"), true);
+  assert.equal(isDirectTextEditingRequest("Ora rendilo più formale"), true);
+  assert.equal(isDirectTextEditingRequest("Puoi spiegarmi il contesto generale?"), false);
+});
+
+test("per una richiesta di correzione il prompt chiede un testo corretto diretto", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "neutro",
+    "Questo e' un testo di prova che serve a verificare l'assente ai",
+    "Devi correggere eventuali errori presenti all'interno del testo"
+  );
+
+  assert.match(prompt, /La richiesta corrente chiede di elaborare direttamente il TESTO BASE DELLA SESSIONE/);
+  assert.match(prompt, /Se la richiesta chiede correzioni, restituisci direttamente il testo corretto completo/);
+  assert.match(prompt, /Non chiedere esempi, frasi o parti da correggere/);
+  assert.match(prompt, /il testo da elaborare e' gia' nel TESTO BASE DELLA SESSIONE/);
+});
+
+test("per una richiesta di correzione il prompt vieta esempi e correzioni di parole assenti", () => {
+  const prompt = buildAssistedSessionPrompt(
+    "neutro",
+    "Questo e' un testo di prova che serve a verificare l'assente ai",
+    "Correggi errori ortografici e refusi"
+  );
+
+  assert.match(prompt, /Non chiedere all'utente di fornire il testo se il TESTO BASE DELLA SESSIONE e' presente/);
+  assert.match(prompt, /Non proporre correzioni di parole assenti dal testo base/);
+});
+
+test("clearAssistedSessionState cancella la sessione tramite logica pura", () => {
+  const session = createAssistedSessionState("Base stabile.");
+  const updatedSession = appendAssistedSessionMessage(session, {
+    role: "user",
+    content: "Domanda."
+  });
+
+  assert.equal(updatedSession.messages.length, 1);
+  assert.equal(clearAssistedSessionState(), null);
+});
+
+test("la sessione assistita non richiede inserimento diretto nel documento", () => {
+  const prompt = buildAssistedSessionPrompt("neutro", "Base stabile.", "Correggi il testo.");
+
+  assert.match(prompt, /risposta copiabile manualmente/i);
+  assert.doesNotMatch(prompt, /setSelectedDataAsync|insertText|insertContentControl|tracked range/i);
+});
+
+test("la logica core della sessione non salva cronologia in storage persistente", () => {
+  const coreOperations = [
+    createAssistedSessionState.toString(),
+    appendAssistedSessionMessage.toString(),
+    clearAssistedSessionState.toString(),
+    buildAssistedSessionPrompt.toString()
+  ].join("\n");
+
+  assert.doesNotMatch(coreOperations, /localStorage|sessionStorage|indexedDB|IndexedDB|writeFile|setItem/i);
+});
+
+test("anteprima singola e sessione assistita restano prompt distinti", () => {
+  const previewPrompt = buildPrompt("neutro", "Correggi.", "Testo.");
+  const sessionPrompt = buildAssistedSessionPrompt("neutro", "Testo.", "Correggi.");
+
+  assert.match(previewPrompt, /Non fare domande all'utente/);
+  assert.match(previewPrompt, /Produci direttamente un risultato finale utilizzabile/);
+  assert.doesNotMatch(previewPrompt, /Sessione assistita/);
+  assert.match(sessionPrompt, /Chiedi chiarimenti solo se la richiesta e' impossibile o realmente ambigua nonostante il testo base/);
+  assert.match(sessionPrompt, /TESTO BASE DELLA SESSIONE/);
 });
 
 test("profili significativi restano disponibili nel prompt builder", () => {
